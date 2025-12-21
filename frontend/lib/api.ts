@@ -118,6 +118,23 @@ export type ExperienceDetail = {
   cover_image?: { url?: string; external_url?: string } | null;
 };
 
+export type CmsPage = {
+  title: string;
+  slug: string;
+  excerpt?: string;
+  content: any[];
+  status?: string;
+  published_at?: string;
+  hero_image?: { url?: string; external_url?: string } | null;
+  cover_image?: { url?: string; external_url?: string } | null;
+  seo_title?: string;
+  seo_description?: string;
+  canonical_url?: string;
+  og_title?: string;
+  og_description?: string;
+  is_homepage?: boolean;
+};
+
 const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 async function getJson<T>(path: string): Promise<T> {
@@ -177,4 +194,12 @@ export function fetchExperiences(params?: { type?: string; featured?: boolean })
 
 export function fetchExperienceDetail(slug: string) {
   return getJson<ExperienceDetail>(`/api/experiences/${slug}/`);
+}
+
+export function fetchHomepage() {
+  return getJson<CmsPage>("/api/pages/home/");
+}
+
+export function fetchPageBySlug(slug: string) {
+  return getJson<CmsPage>(`/api/pages/${slug}/`);
 }

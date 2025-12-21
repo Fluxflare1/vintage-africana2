@@ -51,6 +51,9 @@ class Experience(TimeStampedModel, PublishableModel, SEOFields):
             models.Index(fields=["is_featured", "status"]),
             models.Index(fields=["starts_at", "status"]),
         ]
+        permissions = [
+            ("can_publish_experience", "Can publish experience"),
+        ]
 
     def __str__(self):
         return self.title

@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "corsheaders",
 
+    "apps.core",
     "apps.users",
     "apps.cms",
     "apps.media_library",

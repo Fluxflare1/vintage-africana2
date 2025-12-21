@@ -71,6 +71,13 @@ class Page(TimeStampedModel, PublishableModel, SEOFields):
 
     hero_image = models.ForeignKey(MediaAsset, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
     cover_image = models.ForeignKey(MediaAsset, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    # Hero configuration (video or image background + overlay)
+    hero_enabled = models.BooleanField(default=False, db_index=True)
+    hero_asset = models.ForeignKey(
+        MediaAsset, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
+    )
+    hero_cta_label = models.CharField(max_length=60, blank=True)
+    hero_cta_url = models.CharField(max_length=255, blank=True)
 
     is_homepage = models.BooleanField(default=False, db_index=True)
 

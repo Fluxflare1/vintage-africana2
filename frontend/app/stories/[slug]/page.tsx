@@ -1,6 +1,21 @@
 import { fetchStoryDetail } from "@/lib/api";
 import { ContentRenderer } from "@/components/content/renderer";
 import { normalizeBlocks } from "@/components/content/blocks";
+import { buildMetadata } from "@/lib/seo";
+
+export async function generateMetadata({ params }: { params: { slug: string } }) {
+  const story = await fetchStoryDetail(params.slug);
+  return buildMetadata({
+    title: story.title,
+    excerpt: story.excerpt,
+    seo_title: (story as any).seo_title,
+    seo_description: (story as any).seo_description,
+    canonical_url: (story as any).canonical_url,
+    og_title: (story as any).og_title,
+    og_description: (story as any).og_description,
+    featured_image: (story as any).featured_image,
+  });
+}
 
 export default async function StoryDetailPage({ params }: { params: { slug: string } }) {
   const story = await fetchStoryDetail(params.slug);

@@ -5,6 +5,12 @@ from .models import SiteSettings, NavigationMenu, NavigationItem, Page
 @admin.register(SiteSettings)
 class SiteSettingsAdmin(admin.ModelAdmin):
     list_display = ("id", "site_name", "tagline", "updated_at")
+    
+    def has_add_permission(self, request):
+        from .models import SiteSettings
+        if SiteSettings.objects.exists():
+            return False
+        return super().has_add_permission(request)
 
 
 class NavigationItemInline(admin.TabularInline):

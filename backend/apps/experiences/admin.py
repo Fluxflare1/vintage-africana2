@@ -8,3 +8,9 @@ class ExperienceAdmin(admin.ModelAdmin):
     list_filter = ("type", "status", "is_featured")
     search_fields = ("title", "slug", "summary", "location")
     prepopulated_fields = {"slug": ("title",)}
+
+    def get_readonly_fields(self, request, obj=None):
+        ro = []
+        if not request.user.has_perm("experiences.can_publish_experience"):
+            ro += ["status", "published_at"]
+        return ro

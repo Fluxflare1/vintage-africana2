@@ -60,12 +60,17 @@ class NavigationMenuSerializer(serializers.ModelSerializer):
 class PageSerializer(serializers.ModelSerializer):
     hero_image = MediaAssetSerializer(read_only=True)
     cover_image = MediaAssetSerializer(read_only=True)
+    hero_asset = MediaAssetSerializer(read_only=True)
 
     class Meta:
         model = Page
         fields = (
             "title", "slug", "excerpt", "content",
             "status", "published_at",
+            "hero_enabled",
+            "hero_asset",
+            "hero_cta_label",
+            "hero_cta_url",
             "hero_image", "cover_image",
             "seo_title", "seo_description", "canonical_url",
             "og_title", "og_description",

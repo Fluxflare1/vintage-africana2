@@ -1,6 +1,23 @@
 import { fetchItemDetail } from "@/lib/api";
 import { ContentRenderer } from "@/components/content/renderer";
 import { normalizeBlocks } from "@/components/content/blocks";
+import { buildMetadata } from "@/lib/seo";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: { category: string; item: string };
+}) {
+  const item = await fetchItemDetail(params.category, params.item);
+  return buildMetadata({
+    title: item.name,
+    excerpt: item.item_type || item.short_description,
+    seo_title: (item as any).seo_title,
+    seo_description: (item as any).seo_description,
+    canonical_url: (item as any).canonical_url,
+    cover_image: item.cover_image,
+  });
+}
 
 export default async function ItemDetailPage({
   params,

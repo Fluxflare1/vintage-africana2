@@ -133,6 +133,10 @@ export type CmsPage = {
   og_title?: string;
   og_description?: string;
   is_homepage?: boolean;
+  hero_enabled?: boolean;
+  hero_asset?: { type?: string; url?: string; external_url?: string; alt_text?: string } | null;
+  hero_cta_label?: string;
+  hero_cta_url?: string;
 };
 
 const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";

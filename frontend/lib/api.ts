@@ -92,6 +92,32 @@ export type StoryDetail = {
   related_items?: { name: string; slug: string }[];
 };
 
+export type ExperienceList = {
+  title: string;
+  slug: string;
+  type: string;
+  summary?: string;
+  starts_at?: string;
+  ends_at?: string;
+  location?: string;
+  is_featured?: boolean;
+  cover_image?: { url?: string; external_url?: string } | null;
+};
+
+export type ExperienceDetail = {
+  title: string;
+  slug: string;
+  type: string;
+  summary?: string;
+  details: any[];
+  starts_at?: string;
+  ends_at?: string;
+  location?: string;
+  booking_url?: string;
+  is_featured?: boolean;
+  cover_image?: { url?: string; external_url?: string } | null;
+};
+
 const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 async function getJson<T>(path: string): Promise<T> {
@@ -139,4 +165,16 @@ export function fetchStories(params?: { category?: string; tag?: string; feature
 
 export function fetchStoryDetail(slug: string) {
   return getJson<StoryDetail>(`/api/stories/${slug}/`);
+}
+
+export function fetchExperiences(params?: { type?: string; featured?: boolean }) {
+  const qs = new URLSearchParams();
+  if (params?.type) qs.set("type", params.type);
+  if (params?.featured) qs.set("featured", "true");
+  const query = qs.toString();
+  return getJson<ExperienceList[]>(`/api/experiences/${query ? `?${query}` : ""}`);
+}
+
+export function fetchExperienceDetail(slug: string) {
+  return getJson<ExperienceDetail>(`/api/experiences/${slug}/`);
 }

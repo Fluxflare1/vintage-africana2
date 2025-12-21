@@ -33,3 +33,9 @@ class PageAdmin(admin.ModelAdmin):
         ("Content", {"fields": ("content",)}),
         ("SEO", {"fields": ("seo_title", "seo_description", "canonical_url", "og_title", "og_description")}),
     )
+
+    def get_readonly_fields(self, request, obj=None):
+        ro = []
+        if not request.user.has_perm("cms.can_publish_page"):
+            ro += ["status", "published_at"]
+        return ro

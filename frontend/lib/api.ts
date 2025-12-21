@@ -25,6 +25,38 @@ export type NavigationMenu = {
   items: ApiMenuItem[];
 };
 
+export type CollectionCategory = {
+  name: string;
+  slug: string;
+  description?: string;
+  cover_image?: { url?: string; external_url?: string } | null;
+};
+
+export type VintageItemList = {
+  name: string;
+  slug: string;
+  short_description?: string;
+  year?: number;
+  era_label?: string;
+  condition?: string;
+  cover_image?: { url?: string; external_url?: string } | null;
+};
+
+export type VintageItemDetail = {
+  name: string;
+  slug: string;
+  story: any[];
+  item_type?: string;
+  brand?: string;
+  model?: string;
+  year?: number;
+  era_label?: string;
+  origin_country?: string;
+  condition?: string;
+  cover_image?: { url?: string; external_url?: string } | null;
+  media?: { asset?: { url?: string; external_url?: string } }[];
+};
+
 const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 async function getJson<T>(path: string): Promise<T> {
@@ -39,4 +71,16 @@ export function fetchSiteSettings() {
 
 export function fetchNavigation(code: string) {
   return getJson<NavigationMenu>(`/api/navigation/${code}/`);
+}
+
+export function fetchCollections() {
+  return getJson<CollectionCategory[]>("/api/collections/");
+}
+
+export function fetchItemsByCategory(slug: string) {
+  return getJson<VintageItemList[]>(`/api/collections/${slug}/`);
+}
+
+export function fetchItemDetail(category: string, slug: string) {
+  return getJson<VintageItemDetail>(`/api/collections/${category}/${slug}/`);
 }

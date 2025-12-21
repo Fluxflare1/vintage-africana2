@@ -24,3 +24,9 @@ class VintageItemAdmin(admin.ModelAdmin):
     search_fields = ("name", "brand", "model", "origin_country")
     prepopulated_fields = {"slug": ("name",)}
     inlines = [VintageItemMediaInline]
+
+    def get_readonly_fields(self, request, obj=None):
+        ro = []
+        if not request.user.has_perm("collections.can_publish_vintageitem"):
+            ro += ["status", "published_at"]
+        return ro

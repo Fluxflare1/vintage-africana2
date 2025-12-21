@@ -24,3 +24,9 @@ class StoryAdmin(admin.ModelAdmin):
     search_fields = ("title", "slug", "excerpt")
     prepopulated_fields = {"slug": ("title",)}
     filter_horizontal = ("tags", "related_items")
+
+    def get_readonly_fields(self, request, obj=None):
+        ro = []
+        if not request.user.has_perm("stories.can_publish_story"):
+            ro += ["status", "published_at"]
+        return ro

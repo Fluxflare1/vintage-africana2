@@ -16,3 +16,4 @@ if settings.DEBUG:
 
 path("api/", include("apps.collections.api.urls")),
 path("api/", include("apps.stories.api.urls")),
+path("api/", include("apps.experiences.api.urls")),

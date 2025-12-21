@@ -57,6 +57,41 @@ export type VintageItemDetail = {
   media?: { asset?: { url?: string; external_url?: string } }[];
 };
 
+export type StoryCategory = {
+  name: string;
+  slug: string;
+  description?: string;
+};
+
+export type Tag = {
+  name: string;
+  slug: string;
+};
+
+export type StoryList = {
+  title: string;
+  slug: string;
+  excerpt?: string;
+  published_at?: string;
+  is_featured?: boolean;
+  category?: StoryCategory | null;
+  tags?: Tag[];
+  featured_image?: { url?: string; external_url?: string } | null;
+};
+
+export type StoryDetail = {
+  title: string;
+  slug: string;
+  excerpt?: string;
+  content: any[];
+  published_at?: string;
+  is_featured?: boolean;
+  category?: StoryCategory | null;
+  tags?: Tag[];
+  featured_image?: { url?: string; external_url?: string } | null;
+  related_items?: { name: string; slug: string }[];
+};
+
 const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
 
 async function getJson<T>(path: string): Promise<T> {
@@ -83,4 +118,25 @@ export function fetchItemsByCategory(slug: string) {
 
 export function fetchItemDetail(category: string, slug: string) {
   return getJson<VintageItemDetail>(`/api/collections/${category}/${slug}/`);
+}
+
+export function fetchStoryCategories() {
+  return getJson<StoryCategory[]>("/api/stories/categories/");
+}
+
+export function fetchStoryTags() {
+  return getJson<Tag[]>("/api/stories/tags/");
+}
+
+export function fetchStories(params?: { category?: string; tag?: string; featured?: boolean }) {
+  const qs = new URLSearchParams();
+  if (params?.category) qs.set("category", params.category);
+  if (params?.tag) qs.set("tag", params.tag);
+  if (params?.featured) qs.set("featured", "true");
+  const query = qs.toString();
+  return getJson<StoryList[]>(`/api/stories/${query ? `?${query}` : ""}`);
+}
+
+export function fetchStoryDetail(slug: string) {
+  return getJson<StoryDetail>(`/api/stories/${slug}/`);
 }

@@ -1,8 +1,13 @@
-export default function HomePage() {
+import { fetchHomepage } from "@/lib/api";
+
+export default async function HomePage() {
+  const page = await fetchHomepage();
+
   return (
-    <main style={{ padding: 24 }}>
-      <h1>Vintage Africana</h1>
-      <p>Frontend foundation is configured.</p>
+    <main>
+      <h1>{page.title}</h1>
+      {page.excerpt ? <p>{page.excerpt}</p> : null}
+      {/* page.content is JSON blocks; block rendering will be implemented later */}
     </main>
   );
 }

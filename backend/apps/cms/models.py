@@ -88,3 +88,8 @@ class Page(TimeStampedModel, PublishableModel, SEOFields):
 
     def __str__(self):
         return self.title
+
+    class Meta:
+        permissions = [
+            ("can_publish_page", "Can publish page"),
+        ]

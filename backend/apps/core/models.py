@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 from django.utils.text import slugify
 
 
@@ -23,6 +24,11 @@ class PublishableModel(models.Model):
 
     status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_DRAFT, db_index=True)
     published_at = models.DateTimeField(blank=True, null=True, db_index=True)
+
+    def save(self, *args, **kwargs):
+        if self.status == self.STATUS_PUBLISHED and self.published_at is None:
+            self.published_at = timezone.now()
+        super().save(*args, **kwargs)
 
     class Meta:
         abstract = True

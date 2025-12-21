@@ -22,6 +22,14 @@ class NavigationMenuAdmin(admin.ModelAdmin):
 
 @admin.register(Page)
 class PageAdmin(admin.ModelAdmin):
-    list_display = ("id", "title", "slug", "status", "is_homepage", "updated_at")
-    list_filter = ("status", "is_homepage")
+    list_display = ("id", "title", "slug", "status", "is_homepage", "hero_enabled", "updated_at")
+    list_filter = ("status", "is_homepage", "hero_enabled")
     search_fields = ("title", "slug", "excerpt")
+
+    fieldsets = (
+        ("Page", {"fields": ("title", "slug", "excerpt", "status", "published_at", "is_homepage")}),
+        ("Hero", {"fields": ("hero_enabled", "hero_asset", "hero_cta_label", "hero_cta_url")}),
+        ("Media", {"fields": ("hero_image", "cover_image")}),
+        ("Content", {"fields": ("content",)}),
+        ("SEO", {"fields": ("seo_title", "seo_description", "canonical_url", "og_title", "og_description")}),
+    )

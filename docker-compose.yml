@@ -19,7 +19,7 @@ services:
       timeout: 3s
       retries: 20
 
-backend:
+  backend:
     build:
       context: ./backend
       dockerfile: Dockerfile
@@ -32,7 +32,7 @@ backend:
     depends_on:
       db:
         condition: service_healthy
-  
+
   frontend:
     build:
       context: ./frontend
@@ -40,10 +40,8 @@ backend:
     container_name: vintageafricana_frontend
     restart: unless-stopped
     environment:
-      # inside docker, reach backend by service name
       NEXT_PUBLIC_API_BASE_URL: "http://backend:8000"
     ports:
-      # your requested port
       - "3003:3000"
     depends_on:
       - backend

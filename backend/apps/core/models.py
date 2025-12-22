@@ -11,6 +11,22 @@ class TimeStampedModel(models.Model):
         abstract = True
 
 
+class Version(models.Model):
+    entity = models.CharField(max_length=50)
+    entity_id = models.PositiveIntegerField()
+    payload = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['entity', 'entity_id']),
+            models.Index(fields=['created_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.entity}.{self.entity_id} @ {self.created_at}"
+
+
 class PublishableModel(models.Model):
     STATUS_DRAFT = "draft"
     STATUS_PUBLISHED = "published"
@@ -57,14 +73,3 @@ class Tag(TimeStampedModel):
 
     def __str__(self):
         return self.name
-
-
-
-
-
-MERGE WITH THE ABOVE CODE AND RESPOND WITH MERGED READY-TO-PASTE PRODUCTION-READY CODE
-class Version(models.Model):
-    entity = models.CharField(max_length=50)
-    entity_id = models.PositiveIntegerField()
-    payload = models.JSONField()
-    created_at = models.DateTimeField(auto_now_add=True)

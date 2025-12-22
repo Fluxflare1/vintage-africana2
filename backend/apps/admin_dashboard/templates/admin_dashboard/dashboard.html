@@ -1,28 +1,40 @@
 {% extends "admin/base_site.html" %}
-{% load static %}
+{% load i18n %}
+
+{% block title %}{{ title }} | {{ site_title|default:_("Django site admin") }}{% endblock %}
 
 {% block content %}
-<h1>Dashboard</h1>
+  <div class="content">
+    <h1 style="margin-bottom: 16px;">{{ title }}</h1>
 
-<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;">
-  <div class="module">
-    <h2>Vintage Items</h2>
-    <p>{{ stats.items }}</p>
-  </div>
+    <div style="
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+      margin-top: 10px;
+    ">
+      {% for item in stats %}
+        <div style="
+          background: var(--body-bg, #fff);
+          border: 1px solid var(--hairline-color, #e5e7eb);
+          border-radius: 10px;
+          padding: 14px;
+          box-shadow: 0 1px 2px rgba(0,0,0,.04);
+        ">
+          <div style="font-size: 13px; opacity: .75;">{{ item.label }}</div>
+          <div style="font-size: 28px; font-weight: 700; margin-top: 6px;">
+            {% if item.value is None %}
+              —
+            {% else %}
+              {{ item.value }}
+            {% endif %}
+          </div>
+        </div>
+      {% endfor %}
+    </div>
 
-  <div class="module">
-    <h2>Stories</h2>
-    <p>{{ stats.stories }}</p>
+    <div style="margin-top: 18px; opacity: .8;">
+      Tip: If you see "—", that model table may not be migrated/created yet.
+    </div>
   </div>
-
-  <div class="module">
-    <h2>Experiences</h2>
-    <p>{{ stats.experiences }}</p>
-  </div>
-
-  <div class="module">
-    <h2>Users</h2>
-    <p>{{ stats.users }}</p>
-  </div>
-</div>
 {% endblock %}

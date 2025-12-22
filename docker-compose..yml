@@ -1,3 +1,5 @@
+name: vintage-africana
+
 services:
   db:
     image: postgres:17
@@ -11,6 +13,11 @@ services:
       - "5432:5432"
     volumes:
       - vintageafricana_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vintage_africana -d vintage_africana"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
   backend:
     build:
@@ -18,23 +25,13 @@ services:
       dockerfile: Dockerfile
     container_name: vintageafricana_backend
     restart: unless-stopped
-    environment:
-      DJANGO_SECRET_KEY: "change-me-in-production"
-      DJANGO_DEBUG: "true"
-      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,backend"
-      DJANGO_TIME_ZONE: "Africa/Lagos"
-
-      POSTGRES_DB: "vintage_africana"
-      POSTGRES_USER: "vintage_africana"
-      POSTGRES_PASSWORD: "admin111"
-      POSTGRES_HOST: "db"
-      POSTGRES_PORT: "5432"
-
-      CORS_ALLOWED_ORIGINS: "http://localhost:3003"
+    env_file:
+      - ./backend/.env.docker
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   frontend:
     build:
@@ -43,9 +40,10 @@ services:
     container_name: vintageafricana_frontend
     restart: unless-stopped
     environment:
-      # IMPORTANT: inside Docker, backend is reachable by service name "backend"
+      # inside docker, reach backend by service name
       NEXT_PUBLIC_API_BASE_URL: "http://backend:8000"
     ports:
+      # your requested port
       - "3003:3000"
     depends_on:
       - backend

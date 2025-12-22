@@ -1,20 +1,22 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+
 class User(AbstractUser):
-    ROLE_ADMIN = "admin"
-    ROLE_EDITOR = "editor"
-    ROLE_VIEWER = "viewer"
+    """
+    Custom user model (swapped in via AUTH_USER_MODEL).
 
-    ROLE_CHOICES = [
-        (ROLE_ADMIN, "Admin"),
-        (ROLE_EDITOR, "Editor"),
-        (ROLE_VIEWER, "Viewer"),
-    ]
+    IMPORTANT:
+    - Do NOT redefine `groups` or `user_permissions` here.
+      AbstractUser already defines them properly.
+    """
 
-    role = models.CharField(
-        max_length=20, choices=ROLE_CHOICES, default=ROLE_EDITOR
-    )
+    # optional fields (safe to keep/remove as you like)
+    phone = models.CharField(max_length=32, blank=True, default="")
 
-    def is_admin(self):
-        return self.role == self.ROLE_ADMIN
+    def is_admin(self) -> bool:
+        # used by your IsAdmin permission
+        return bool(self.is_staff or self.is_superuser)
+
+    def __str__(self):
+        return self.get_username()

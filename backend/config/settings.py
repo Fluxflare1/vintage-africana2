@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "apps.media_library",
     "apps.collections",
     "apps.stories",
+    "apps.admin_dashboard",
     "apps.experiences",
 ]
 

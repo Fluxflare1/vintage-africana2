@@ -1,8 +1,37 @@
 from django.db import models
 from django.utils.text import slugify
 
-from apps.core.models import TimeStampedModel, PublishableModel, SEOFields
+from apps.core.models import TimeStampedModel, SEOFields
 from apps.media_library.models import MediaAsset
+
+
+class WorkflowMixin(models.Model):
+    STATUS_DRAFT = "draft"
+    STATUS_REVIEW = "review"
+    STATUS_PUBLISHED = "published"
+
+    STATUS_CHOICES = [
+        (STATUS_DRAFT, "Draft"),
+        (STATUS_REVIEW, "Review"),
+        (STATUS_PUBLISHED, "Published"),
+    ]
+
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT
+    )
+    published_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        abstract = True
+
+
+class PublishableModel(WorkflowMixin):
+    """
+    PublishableModel now inherits from WorkflowMixin,
+    keeping backward compatibility while adding the workflow fields.
+    """
+    class Meta:
+        abstract = True
 
 
 class SiteSettings(TimeStampedModel):

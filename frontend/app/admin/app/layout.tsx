@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { fetchAdminMe } from "@/lib/admin-auth";
+import { requireAdmin } from "@/lib/require-admin";
 
 export default async function AdminAppLayout({
   children,
@@ -18,6 +19,10 @@ export default async function AdminAppLayout({
   if (!user) {
     redirect("/admin/login");
   }
+
+  // Additional admin permission check
+  const ok = await requireAdmin();
+  if (!ok) return <h1>403 — Admin Only</h1>;
 
   return (
     <div style={{ display: "flex", height: "100vh" }}>

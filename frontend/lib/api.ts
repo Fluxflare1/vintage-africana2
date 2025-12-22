@@ -134,45 +134,45 @@ export type CmsPage = {
   og_description?: string;
   is_homepage?: boolean;
   hero_enabled?: boolean;
-  hero_asset?: { type?: string; url?: string; external_url?: string; alt_text?: string } | null;
+  hero_asset?: {
+    type?: string;
+    url?: string;
+    external_url?: string;
+    alt_text?: string;
+  } | null;
   hero_cta_label?: string;
   hero_cta_url?: string;
 };
 
 /**
  * IMPORTANT:
- * - Browser cannot resolve Docker service names like "http://backend:8000".
- * - Server-side (inside the frontend container) *can* resolve "backend".
- *
- * We support both correctly:
- * - Server-side uses INTERNAL_API_BASE_URL (default: http://backend:8000)
- * - Browser uses NEXT_PUBLIC_API_BASE_URL (default: http://localhost:8000)
+ * - In the browser: use relative URLs so requests go to the Next.js server (same origin).
+ * - On the server (Docker): use INTERNAL_API_BASE_URL=http://backend:8000.
  */
-function resolveBaseUrl() {
-  const isBrowser = typeof window !== "undefined";
+function resolveBaseUrl(): string {
+  // Browser
+  if (typeof window !== "undefined") return "";
 
-  const browserBase =
-    process.env.NEXT_PUBLIC_API_BASE_URL?.trim() || "http://localhost:8000";
+  // Server (Node) - inside Docker
+  const internal = process.env.INTERNAL_API_BASE_URL;
+  if (internal) return internal;
 
-  const serverBase =
-    process.env.INTERNAL_API_BASE_URL?.trim() ||
-    process.env.NEXT_PUBLIC_API_BASE_URL?.trim() ||
-    "http://backend:8000";
-
-  return isBrowser ? browserBase : serverBase;
+  // Fallback (useful for non-docker server runs)
+  return process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 }
 
 async function getJson<T>(path: string): Promise<T> {
   const baseUrl = resolveBaseUrl();
+  const url = `${baseUrl}${path}`;
 
-  const res = await fetch(`${baseUrl}${path}`, {
+  const res = await fetch(url, {
     cache: "no-store",
     headers: { Accept: "application/json" },
   });
 
   if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`API error ${res.status} for ${path}. Body: ${body.slice(0, 300)}`);
+    const text = await res.text().catch(() => "");
+    throw new Error(`API error ${res.status} for ${path}${text ? ` :: ${text}` : ""}`);
   }
 
   return res.json();

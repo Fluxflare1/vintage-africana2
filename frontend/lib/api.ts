@@ -139,7 +139,11 @@ export type CmsPage = {
   hero_cta_url?: string;
 };
 
-const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
+/**
+ * Default for local (non-docker) usage is 127.0.0.1:8000.
+ * In Docker, we set NEXT_PUBLIC_API_BASE_URL=http://backend:8000 via docker-compose.
+ */
+const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 
 async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(`${baseUrl}${path}`, { cache: "no-store" });

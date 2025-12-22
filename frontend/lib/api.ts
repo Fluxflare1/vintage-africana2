@@ -140,14 +140,39 @@ export type CmsPage = {
 };
 
 /**
- * Default for local (non-docker) usage is 127.0.0.1:8000.
- * In Docker, we set NEXT_PUBLIC_API_BASE_URL=http://backend:8000 via docker-compose.
+ * IMPORTANT:
+ * - Browser must use a host-resolvable URL (e.g. http://localhost:8000)
+ * - Server-side (inside docker container) can use docker DNS (e.g. http://backend:8000)
+ *
+ * Env:
+ * - NEXT_PUBLIC_API_BASE_URL  -> browser/public
+ * - API_INTERNAL_BASE_URL     -> server-side inside docker network
  */
-const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
+const PUBLIC_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
+const INTERNAL_BASE_URL = process.env.API_INTERNAL_BASE_URL || PUBLIC_BASE_URL;
+
+// Decide base URL depending on where code is running
+function resolveBaseUrl() {
+  // In the browser, window exists -> must use PUBLIC url (localhost)
+  if (typeof window !== "undefined") return PUBLIC_BASE_URL;
+  // On the server (Next.js SSR inside container), use internal if provided
+  return INTERNAL_BASE_URL;
+}
 
 async function getJson<T>(path: string): Promise<T> {
-  const res = await fetch(`${baseUrl}${path}`, { cache: "no-store" });
-  if (!res.ok) throw new Error(`API error ${res.status} for ${path}`);
+  const baseUrl = resolveBaseUrl();
+  const url = `${baseUrl}${path}`;
+
+  const res = await fetch(url, {
+    cache: "no-store",
+    headers: { Accept: "application/json" },
+  });
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`API error ${res.status} for ${path}. URL=${url}. Body=${text.slice(0, 300)}`);
+  }
+
   return res.json();
 }
 

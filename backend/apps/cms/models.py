@@ -92,7 +92,7 @@ class NavigationItem(TimeStampedModel):
 
 
 class Page(TimeStampedModel, PublishableModel, SEOFields):
-    title = models.CharField(max_length=140)
+    title = models.CharField(max_length=200)
     slug = models.SlugField(max_length=160, unique=True)
 
     excerpt = models.CharField(max_length=255, blank=True)

@@ -9,7 +9,6 @@ admin.site.site_title = "Vintage Africana Admin"
 admin.site.index_title = "Dashboard"
 
 urlpatterns = [
-    path("admin/dashboard/", include("apps.admin_dashboard.urls")),
     path("admin/", admin.site.urls),
     
     # API endpoints

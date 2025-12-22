@@ -1,0 +1,28 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block content %}
+<h1>Dashboard</h1>
+
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:20px;">
+  <div class="module">
+    <h2>Vintage Items</h2>
+    <p>{{ stats.items }}</p>
+  </div>
+
+  <div class="module">
+    <h2>Stories</h2>
+    <p>{{ stats.stories }}</p>
+  </div>
+
+  <div class="module">
+    <h2>Experiences</h2>
+    <p>{{ stats.experiences }}</p>
+  </div>
+
+  <div class="module">
+    <h2>Users</h2>
+    <p>{{ stats.users }}</p>
+  </div>
+</div>
+{% endblock %}

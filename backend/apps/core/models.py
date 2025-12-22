@@ -57,3 +57,14 @@ class Tag(TimeStampedModel):
 
     def __str__(self):
         return self.name
+
+
+
+
+
+MERGE WITH THE ABOVE CODE AND RESPOND WITH MERGED READY-TO-PASTE PRODUCTION-READY CODE
+class Version(models.Model):
+    entity = models.CharField(max_length=50)
+    entity_id = models.PositiveIntegerField()
+    payload = models.JSONField()
+    created_at = models.DateTimeField(auto_now_add=True)

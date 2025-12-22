@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { fetchAdminMe } from "@/lib/admin-auth";
 
 export default async function AdminAppLayout({
@@ -6,8 +7,14 @@ export default async function AdminAppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const user = await fetchAdminMe();
+  // Check session cookie first
+  const auth = cookies().get("sessionid");
+  if (!auth) {
+    return <meta httpEquiv="refresh" content="0; url=/admin/login" />;
+  }
 
+  // Then verify user via API
+  const user = await fetchAdminMe();
   if (!user) {
     redirect("/admin/login");
   }

@@ -29,7 +29,6 @@ INSTALLED_APPS = [
     "apps.collections",
     "apps.stories",
     "apps.experiences",
-    "apps.admin_dashboard",
 ]
 
 MIDDLEWARE = [

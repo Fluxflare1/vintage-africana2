@@ -20,18 +20,16 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
     "rest_framework",
     "corsheaders",
-
     "apps.core",
     "apps.users",
     "apps.cms",
     "apps.media_library",
     "apps.collections",
     "apps.stories",
-    "apps.admin_dashboard",
     "apps.experiences",
+    "apps.admin_dashboard",
 ]
 
 MIDDLEWARE = [

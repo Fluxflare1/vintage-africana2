@@ -3,7 +3,9 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm install
+
+# Avoid peer-dependency install failures in container builds (common with eslint/next)
+RUN npm install --legacy-peer-deps
 
 COPY . .
 

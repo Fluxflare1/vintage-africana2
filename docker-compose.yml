@@ -37,8 +37,10 @@ services:
     container_name: vintageafricana_frontend
     restart: unless-stopped
     environment:
+      # Used in the browser (Chrome on your PC)
       NEXT_PUBLIC_API_BASE_URL: "http://localhost:8000"
-      API_INTERNAL_BASE_URL: "http://backend:8000"
+      # Used server-side inside the frontend container
+      INTERNAL_API_BASE_URL: "http://backend:8000"
     ports:
       - "3003:3000"
     depends_on:

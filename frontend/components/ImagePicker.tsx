@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-type MediaAsset = {
+export type MediaAsset = {
   id: number;
   type: "image" | "video" | "audio" | "doc";
   title: string;
@@ -14,10 +14,14 @@ export function ImagePicker({
   open,
   onClose,
   onPick,
+  type = "image",
+  title = "Pick an Asset",
 }: {
   open: boolean;
   onClose: () => void;
   onPick: (asset: MediaAsset) => void;
+  type?: MediaAsset["type"]; // ✅ added
+  title?: string;            // ✅ optional UI title
 }) {
   const [assets, setAssets] = useState<MediaAsset[]>([]);
   const [loading, setLoading] = useState(false);
@@ -28,25 +32,27 @@ export function ImagePicker({
   const filtered = useMemo(() => {
     const query = q.trim().toLowerCase();
     return assets.filter((a) => {
-      if (a.type !== "image") return false;
+      if (type && a.type !== type) return false;
       if (!query) return true;
       return (a.title || "").toLowerCase().includes(query);
     });
-  }, [assets, q]);
+  }, [assets, q, type]);
 
   async function load() {
     setErr(null);
     setLoading(true);
     try {
-      // IMPORTANT: use absolute backend URL or relative depending on your setup.
-      // If Next is proxying /api -> backend already, keep it relative.
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL ?? ""}/api/admin/media/`, {
+      const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+      const url = `${base}/api/admin/media/`;
+
+      const res = await fetch(url, {
         credentials: "include",
         cache: "no-store",
       });
+
       if (!res.ok) throw new Error(await res.text().catch(() => "Failed to load media"));
       const data = await res.json();
-      setAssets(data);
+      setAssets(Array.isArray(data) ? data : []);
     } catch (e: any) {
       setErr(e?.message || "Failed to load media");
     } finally {
@@ -65,10 +71,11 @@ export function ImagePicker({
     try {
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("type", "image");
+      fd.append("type", type); // ✅ use selected type
       fd.append("title", file.name);
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL ?? ""}/api/admin/media/upload/`, {
+      const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
+      const res = await fetch(`${base}/api/admin/media/upload/`, {
         method: "POST",
         credentials: "include",
         body: fd,
@@ -90,8 +97,8 @@ export function ImagePicker({
     <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
       <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden">
         <div className="p-4 border-b flex items-center justify-between gap-3">
-          <div className="font-semibold">Pick an Image</div>
-          <button className="border px-3 py-1 rounded" onClick={onClose}>
+          <div className="font-semibold">{title}</div>
+          <button className="border px-3 py-1 rounded" onClick={onClose} type="button">
             Close
           </button>
         </div>
@@ -108,10 +115,10 @@ export function ImagePicker({
             />
 
             <label className="border px-3 py-2 rounded cursor-pointer text-sm w-fit">
-              {uploading ? "Uploading..." : "Upload image"}
+              {uploading ? "Uploading..." : `Upload ${type}`}
               <input
                 type="file"
-                accept="image/*"
+                accept={type === "image" ? "image/*" : type === "video" ? "video/*" : type === "audio" ? "audio/*" : "*/*"}
                 className="hidden"
                 onChange={(e) => {
                   const f = e.target.files?.[0];
@@ -122,7 +129,7 @@ export function ImagePicker({
               />
             </label>
 
-            <button className="border px-3 py-2 rounded text-sm" onClick={load} disabled={loading}>
+            <button className="border px-3 py-2 rounded text-sm" onClick={load} disabled={loading} type="button">
               {loading ? "Loading..." : "Refresh"}
             </button>
           </div>
@@ -136,11 +143,21 @@ export function ImagePicker({
                 type="button"
                 title={a.title || `Asset #${a.id}`}
               >
-                {/* image preview */}
                 <div className="aspect-square bg-gray-50">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={a.url} alt={a.alt_text || a.title || ""} className="w-full h-full object-cover" />
+                  {a.type === "image" ? (
+                    <img
+                      src={a.url}
+                      alt={a.alt_text || a.title || ""}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-xs text-gray-500">
+                      {a.type.toUpperCase()}
+                    </div>
+                  )}
                 </div>
+
                 <div className="p-2 text-xs">
                   <div className="font-medium truncate">{a.title || `Asset #${a.id}`}</div>
                 </div>
@@ -149,7 +166,7 @@ export function ImagePicker({
           </div>
 
           {!loading && filtered.length === 0 ? (
-            <div className="text-sm text-muted-foreground">No images found.</div>
+            <div className="text-sm text-muted-foreground">No assets found.</div>
           ) : null}
         </div>
       </div>

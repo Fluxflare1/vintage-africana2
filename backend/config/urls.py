@@ -21,9 +21,12 @@ urlpatterns = [
     path("api/", include("apps.cms.api.admin_urls")),
     path("api/", include("apps.cms.api.admin_nav_urls")),
     path("api/", include("apps.media_library.api.admin_urls")),
+    path("api/", include("apps.media_library.api.urls")),
 ]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+
 
 

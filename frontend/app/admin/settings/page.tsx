@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ImagePicker } from "@/components/admin/ImagePicker";
+import { ImagePicker, MediaAsset } from "@/components/ImagePicker";
 
-type MediaAsset = {
+type MediaAssetData = {
   id: number;
   url: string;
   external_url: string;
@@ -17,9 +17,9 @@ type Settings = {
   site_name: string;
   tagline: string;
 
-  logo: MediaAsset | null;
-  favicon: MediaAsset | null;
-  default_og_image: MediaAsset | null;
+  logo: MediaAssetData | null;
+  favicon: MediaAssetData | null;
+  default_og_image: MediaAssetData | null;
 
   instagram: string;
   x_twitter: string;
@@ -85,11 +85,20 @@ export default function AdminSettingsPage() {
     })();
   }, []);
 
-  function pickToField(asset: any) {
+  function pickToField(asset: MediaAsset) {
     if (!settings) return;
-    if (pickerTarget === "logo") setSettings({ ...settings, logo: asset });
-    if (pickerTarget === "favicon") setSettings({ ...settings, favicon: asset });
-    if (pickerTarget === "og") setSettings({ ...settings, default_og_image: asset });
+    const assetData: MediaAssetData = {
+      id: asset.id,
+      url: asset.url,
+      external_url: "",
+      title: asset.title || "",
+      alt_text: asset.alt_text || "",
+      caption: "",
+      type: asset.type
+    };
+    if (pickerTarget === "logo") setSettings({ ...settings, logo: assetData });
+    if (pickerTarget === "favicon") setSettings({ ...settings, favicon: assetData });
+    if (pickerTarget === "og") setSettings({ ...settings, default_og_image: assetData });
   }
 
   async function save() {
@@ -154,7 +163,7 @@ export default function AdminSettingsPage() {
   if (err) return <div className="text-red-600 text-sm">{err}</div>;
   if (!settings) return <div>No settings loaded.</div>;
 
-  const Img = ({ asset }: { asset: MediaAsset | null }) => {
+  const Img = ({ asset }: { asset: MediaAssetData | null }) => {
     if (!asset) return <div className="text-sm text-gray-600">Not set</div>;
     const src = asset.url || asset.external_url;
     return <img src={src} className="h-16 w-16 rounded object-cover border" alt={asset.alt_text || asset.title || "image"} />;

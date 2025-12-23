@@ -7,6 +7,7 @@ from .views import (
     admin_pages_v2,
     admin_page_detail_v2,
     admin_site_settings,
+    admin_setup_seed,
 )
 
 urlpatterns = [
@@ -20,4 +21,5 @@ urlpatterns = [
     path("admin/pages/", admin_pages_v2, name="admin-pages"),
     path("admin/pages/<int:id>/", admin_page_detail_v2, name="admin-page-detail"),
     path("admin/settings/", admin_site_settings, name="admin-site-settings"),
+    path("admin/setup/", admin_setup_seed, name="admin-setup-seed"),
 ]

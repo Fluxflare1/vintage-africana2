@@ -22,10 +22,12 @@ export default function EditPage() {
   const [status, setStatus] = useState<"draft" | "published">("draft");
   const [isHomepage, setIsHomepage] = useState(false);
 
-  // hero + cover
+  // hero + cover - STORE IDs, not URLs
   const [heroEnabled, setHeroEnabled] = useState(false);
-  const [heroAsset, setHeroAsset] = useState<string>("");     // URL
-  const [coverImage, setCoverImage] = useState<string>("");   // URL
+  const [heroAssetId, setHeroAssetId] = useState<number | null>(null);
+  const [coverImageId, setCoverImageId] = useState<number | null>(null);
+  const [heroAssetUrl, setHeroAssetUrl] = useState<string>("");     // for preview only
+  const [coverImageUrl, setCoverImageUrl] = useState<string>("");   // for preview only
   const [heroCtaLabel, setHeroCtaLabel] = useState<string>("");
   const [heroCtaUrl, setHeroCtaUrl] = useState<string>("");
 
@@ -62,8 +64,10 @@ export default function EditPage() {
       setBlocks(p.content || []);
 
       setHeroEnabled(!!p.hero_enabled);
-      setHeroAsset(p.hero_asset || "");
-      setCoverImage(p.cover_image || "");
+      setHeroAssetId(p.hero_asset?.id || null);
+      setCoverImageId(p.cover_image?.id || null);
+      setHeroAssetUrl(p.hero_asset?.url || "");
+      setCoverImageUrl(p.cover_image?.url || "");
       setHeroCtaLabel(p.hero_cta_label || "");
       setHeroCtaUrl(p.hero_cta_url || "");
 
@@ -78,8 +82,14 @@ export default function EditPage() {
   }
 
   function onPick(asset: PickedAsset) {
-    if (pickerTarget === "hero") setHeroAsset(asset.url);
-    if (pickerTarget === "cover") setCoverImage(asset.url);
+    if (pickerTarget === "hero") {
+      setHeroAssetId(asset.id);
+      setHeroAssetUrl(asset.url); // for preview only
+    }
+    if (pickerTarget === "cover") {
+      setCoverImageId(asset.id);
+      setCoverImageUrl(asset.url); // for preview only
+    }
     setPickerOpen(false);
   }
 
@@ -94,8 +104,8 @@ export default function EditPage() {
       content: blocks,
 
       hero_enabled: heroEnabled,
-      hero_asset: heroAsset || null,
-      cover_image: coverImage || null,
+      hero_asset_id: heroAssetId || null,
+      cover_image_id: coverImageId || null,
       hero_cta_label: heroCtaLabel,
       hero_cta_url: heroCtaUrl,
     };
@@ -153,9 +163,9 @@ export default function EditPage() {
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <div className="text-sm font-semibold">Hero Image</div>
-            {heroAsset ? (
+            {heroAssetUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={heroAsset} alt="" className="h-36 w-full object-cover rounded border" />
+              <img src={heroAssetUrl} alt="" className="h-36 w-full object-cover rounded border" />
             ) : (
               <div className="h-36 rounded border flex items-center justify-center text-sm text-muted-foreground">
                 No hero image
@@ -172,7 +182,10 @@ export default function EditPage() {
               >
                 Pick hero image
               </button>
-              <button className="border px-3 py-2 rounded" onClick={() => setHeroAsset("")}>
+              <button className="border px-3 py-2 rounded" onClick={() => {
+                setHeroAssetId(null);
+                setHeroAssetUrl("");
+              }}>
                 Clear
               </button>
             </div>
@@ -180,9 +193,9 @@ export default function EditPage() {
 
           <div className="space-y-2">
             <div className="text-sm font-semibold">Cover Image (OG)</div>
-            {coverImage ? (
+            {coverImageUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={coverImage} alt="" className="h-36 w-full object-cover rounded border" />
+              <img src={coverImageUrl} alt="" className="h-36 w-full object-cover rounded border" />
             ) : (
               <div className="h-36 rounded border flex items-center justify-center text-sm text-muted-foreground">
                 No cover image
@@ -199,7 +212,10 @@ export default function EditPage() {
               >
                 Pick cover image
               </button>
-              <button className="border px-3 py-2 rounded" onClick={() => setCoverImage("")}>
+              <button className="border px-3 py-2 rounded" onClick={() => {
+                setCoverImageId(null);
+                setCoverImageUrl("");
+              }}>
                 Clear
               </button>
             </div>

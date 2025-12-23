@@ -55,6 +55,10 @@ export default function AdminDashboard() {
           href="/admin/homepage"
         />
       </div>
+
+      <div className="pt-4 border-t">
+        <Link className="underline" href="/admin/setup">Setup</Link>
+      </div>
     </div>
   );
 }

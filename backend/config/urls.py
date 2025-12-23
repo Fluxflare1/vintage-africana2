@@ -23,11 +23,9 @@ urlpatterns = [
     path("api/", include("apps.media_library.api.admin_urls")),
     path("api/", include("apps.media_library.api.urls")),
     path("api/", include("apps.cms.api.setup_urls")),
+    path("api/auth/", include("apps.core.api.auth_urls")),
 ]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-
-
-
 

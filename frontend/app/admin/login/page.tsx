@@ -1,9 +1,12 @@
+// frontend/app/admin/login/page.tsx
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+// If NEXT_PUBLIC_BACKEND_URL is empty, requests become relative (/api/..)
+// which is correct when Next proxies /api -> backend in Docker/prod.
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
 
 function getCookie(name: string) {
   if (typeof document === "undefined") return "";
@@ -11,9 +14,14 @@ function getCookie(name: string) {
   return m ? decodeURIComponent(m[2]) : "";
 }
 
+function getNextParam(): string {
+  if (typeof window === "undefined") return "/admin/dashboard";
+  const sp = new URLSearchParams(window.location.search);
+  return sp.get("next") || "/admin/dashboard";
+}
+
 export default function AdminLogin() {
   const router = useRouter();
-  const sp = useSearchParams();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -50,15 +58,16 @@ export default function AdminLogin() {
       return;
     }
 
-    const next = sp.get("next") || "/admin/dashboard";
-    router.replace(next);
+    router.replace(getNextParam());
   }
 
   return (
     <main className="max-w-md mx-auto p-6 space-y-4">
       <h1 className="text-2xl font-bold">Admin Login</h1>
 
-      {err ? <p className="text-red-600 text-sm whitespace-pre-wrap">{err}</p> : null}
+      {err ? (
+        <p className="text-red-600 text-sm whitespace-pre-wrap">{err}</p>
+      ) : null}
 
       <form onSubmit={onSubmit} className="space-y-3">
         <input

@@ -58,20 +58,46 @@ class NavigationMenuSerializer(serializers.ModelSerializer):
 
 
 class PageSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(read_only=True)
+
+    # read (for UI display)
     hero_image = MediaAssetSerializer(read_only=True)
     cover_image = MediaAssetSerializer(read_only=True)
     hero_asset = MediaAssetSerializer(read_only=True)
 
+    # write (IDs from Next.js admin)
+    hero_image_id = serializers.PrimaryKeyRelatedField(
+        source="hero_image",
+        queryset=MediaAsset.objects.all(),
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
+    cover_image_id = serializers.PrimaryKeyRelatedField(
+        source="cover_image",
+        queryset=MediaAsset.objects.all(),
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
+    hero_asset_id = serializers.PrimaryKeyRelatedField(
+        source="hero_asset",
+        queryset=MediaAsset.objects.all(),
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
+
     class Meta:
         model = Page
         fields = (
+            "id",
             "title", "slug", "excerpt", "content",
             "status", "published_at",
             "hero_enabled",
-            "hero_asset",
-            "hero_cta_label",
-            "hero_cta_url",
-            "hero_image", "cover_image",
+            "hero_cta_label", "hero_cta_url",
+            "hero_asset", "hero_image", "cover_image",
+            "hero_asset_id", "hero_image_id", "cover_image_id",
             "seo_title", "seo_description", "canonical_url",
             "og_title", "og_description",
             "is_homepage",

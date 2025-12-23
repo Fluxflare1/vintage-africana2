@@ -20,6 +20,8 @@ export default function EditPage() {
   const [isHomepage, setIsHomepage] = useState(false);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [err, setErr] = useState<string | null>(null);
+  const [coverImage, setCoverImage] = useState<string>("");
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -38,6 +40,7 @@ export default function EditPage() {
       setStatus(p.status || "draft");
       setIsHomepage(!!p.is_homepage);
       setBlocks(p.content || []);
+      setCoverImage(p.cover_image || "");
       setLoading(false);
     })();
   }, [params.id]);
@@ -59,6 +62,7 @@ export default function EditPage() {
         slug,
         status,
         is_homepage: isHomepage,
+        cover_image: coverImage,
         content: blocks,
       }),
     });
@@ -94,6 +98,38 @@ export default function EditPage() {
           </select>
         </div>
       </div>
+
+      <div className="border rounded p-3 space-y-2">
+        <div className="font-semibold">Cover Image</div>
+
+        {coverImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={coverImage} alt="" className="h-40 rounded object-cover border" />
+        ) : (
+          <div className="text-sm text-muted-foreground">No cover image selected.</div>
+        )}
+
+        <div className="flex gap-2">
+          <button className="border px-3 py-2 rounded" onClick={() => setPickerOpen(true)}>
+            Pick image
+          </button>
+
+          {coverImage ? (
+            <button className="border px-3 py-2 rounded" onClick={() => setCoverImage("")}>
+              Clear
+            </button>
+          ) : null}
+        </div>
+      </div>
+
+      <ImagePicker
+        open={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onPick={(asset) => {
+          setCoverImage(asset.url);
+          setPickerOpen(false);
+        }}
+      />
 
       <div className="border rounded p-3 space-y-3">
         <div className="flex gap-2">

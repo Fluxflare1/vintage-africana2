@@ -136,21 +136,23 @@ export default function AdminHomepage() {
       <ImagePicker
         open={heroPickerOpen}
         onClose={() => setHeroPickerOpen(false)}
-        onPick={(asset: any) => {
+        onPick={(asset) => {
           setHeroAsset({ id: asset.id, url: asset.url, title: asset.title });
           setHeroPickerOpen(false);
         }}
         type="image"
+        title="Pick Hero Image"
       />
 
       <ImagePicker
         open={coverPickerOpen}
         onClose={() => setCoverPickerOpen(false)}
-        onPick={(asset: any) => {
+        onPick={(asset) => {
           setCoverImage({ id: asset.id, url: asset.url, title: asset.title });
           setCoverPickerOpen(false);
         }}
         type="image"
+        title="Pick Cover Image"
       />
     </main>
   );

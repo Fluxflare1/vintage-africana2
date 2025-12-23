@@ -3,8 +3,10 @@
 import StatusBar from "@/components/admin/StatusBar";
 import { useState } from "react";
 
+type PageStatus = "draft" | "review" | "published" | "archived";
+
 export default function PageEditor() {
-  const [page, setPage] = useState({
+  const [page, setPage] = useState<{ status: PageStatus }>({
     status: "draft",
   });
 
@@ -12,7 +14,7 @@ export default function PageEditor() {
     <>
       <StatusBar
         status={page.status}
-        setStatus={(v) => setPage({ ...page, status: v })}
+        setStatus={(v: PageStatus) => setPage({ ...page, status: v })}
       />
     </>
   );

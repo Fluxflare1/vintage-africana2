@@ -1,3 +1,5 @@
+"use client";
+
 import StatusBar from "@/components/admin/StatusBar";
 import { useState } from "react";
 

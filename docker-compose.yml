@@ -24,11 +24,19 @@ services:
     restart: unless-stopped
     env_file:
       - ./backend/.env.docker
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
     ports:
       - "8000:8000"
     depends_on:
       db:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python manage.py check --deploy >/dev/null 2>&1 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   frontend:
     build:
@@ -37,12 +45,15 @@ services:
     container_name: vintageafricana_frontend
     restart: unless-stopped
     environment:
-      # Used server-side inside the frontend container
+      # Server-side requests inside the frontend container
       INTERNAL_API_BASE_URL: "http://backend:8000"
+      # Browser-side requests (MUST be NEXT_PUBLIC_*)
+      NEXT_PUBLIC_API_BASE_URL: "http://localhost:8000"
     ports:
       - "3003:3000"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   vintageafricana_db_data:

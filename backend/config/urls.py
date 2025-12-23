@@ -18,6 +18,7 @@ urlpatterns = [
     path("api/", include("apps.stories.api.urls")),
     path("api/", include("apps.experiences.api.urls")),
     path("api/", include("apps.users.api.urls")),
+    path("api/", include("apps.cms.api.admin_urls")),
 ]
 
 if settings.DEBUG:

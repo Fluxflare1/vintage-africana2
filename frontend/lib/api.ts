@@ -1,5 +1,3 @@
-// frontend/lib/api.ts
-
 type ApiMenuItem = {
   label: string;
   url: string;
@@ -62,6 +60,7 @@ export type VintageItemDetail = {
 export type StoryCategory = {
   name: string;
   slug: string;
+  description?: string;
 };
 
 export type Tag = {
@@ -145,18 +144,27 @@ export type CmsPage = {
   hero_cta_url?: string;
 };
 
+/**
+ * Rules:
+ * - Browser must call the backend via http://localhost:8000 (NOT backend:8000).
+ * - Server-side (inside Docker) should call http://backend:8000 via INTERNAL_API_BASE_URL.
+ */
 function resolveBaseUrl(): string {
   // Browser
   if (typeof window !== "undefined") {
-    return process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
+    return process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000";
   }
 
-  // Server (Docker)
-  return process.env.INTERNAL_API_BASE_URL || "http://127.0.0.1:8000";
+  // Server (Node) - inside Docker
+  if (process.env.INTERNAL_API_BASE_URL) return process.env.INTERNAL_API_BASE_URL;
+
+  // Fallback
+  return process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
 }
 
 async function getJson<T>(path: string): Promise<T> {
-  const url = `${resolveBaseUrl()}${path}`;
+  const baseUrl = resolveBaseUrl();
+  const url = `${baseUrl}${path}`;
 
   const res = await fetch(url, {
     cache: "no-store",
@@ -164,62 +172,70 @@ async function getJson<T>(path: string): Promise<T> {
   });
 
   if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`API ${res.status} ${path} :: ${body}`);
+    const text = await res.text().catch(() => "");
+    throw new Error(`API error ${res.status} for ${path}${text ? ` :: ${text}` : ""}`);
   }
 
   return res.json();
 }
 
-export const fetchSiteSettings = () => getJson<SiteSettings>("/api/settings/");
-export const fetchNavigation = (code: string) =>
-  getJson<NavigationMenu>(`/api/navigation/${code}/`);
+export function fetchSiteSettings() {
+  return getJson<SiteSettings>("/api/settings/");
+}
 
-export const fetchCollections = () =>
-  getJson<CollectionCategory[]>("/api/collections/");
+export function fetchNavigation(code: string) {
+  return getJson<NavigationMenu>(`/api/navigation/${code}/`);
+}
 
-export const fetchItemsByCategory = (slug: string) =>
-  getJson<VintageItemList[]>(`/api/collections/${slug}/`);
+export function fetchCollections() {
+  return getJson<CollectionCategory[]>("/api/collections/");
+}
 
-export const fetchItemDetail = (category: string, slug: string) =>
-  getJson<VintageItemDetail>(`/api/collections/${category}/${slug}/`);
+export function fetchItemsByCategory(slug: string) {
+  return getJson<VintageItemList[]>(`/api/collections/${slug}/`);
+}
 
-export const fetchStoryCategories = () =>
-  getJson<StoryCategory[]>("/api/stories/categories/");
+export function fetchItemDetail(category: string, slug: string) {
+  return getJson<VintageItemDetail>(`/api/collections/${category}/${slug}/`);
+}
 
-export const fetchStoryTags = () =>
-  getJson<Tag[]>("/api/stories/tags/");
+export function fetchStoryCategories() {
+  return getJson<StoryCategory[]>("/api/stories/categories/");
+}
 
-export const fetchStories = (params?: {
-  category?: string;
-  tag?: string;
-  featured?: boolean;
-}) => {
+export function fetchStoryTags() {
+  return getJson<Tag[]>("/api/stories/tags/");
+}
+
+export function fetchStories(params?: { category?: string; tag?: string; featured?: boolean }) {
   const qs = new URLSearchParams();
   if (params?.category) qs.set("category", params.category);
   if (params?.tag) qs.set("tag", params.tag);
   if (params?.featured) qs.set("featured", "true");
-  return getJson<StoryList[]>(`/api/stories/?${qs.toString()}`);
-};
+  const query = qs.toString();
+  return getJson<StoryList[]>(`/api/stories/${query ? `?${query}` : ""}`);
+}
 
-export const fetchStoryDetail = (slug: string) =>
-  getJson<StoryDetail>(`/api/stories/${slug}/`);
+export function fetchStoryDetail(slug: string) {
+  return getJson<StoryDetail>(`/api/stories/${slug}/`);
+}
 
-export const fetchExperiences = (params?: {
-  type?: string;
-  featured?: boolean;
-}) => {
+export function fetchExperiences(params?: { type?: string; featured?: boolean }) {
   const qs = new URLSearchParams();
   if (params?.type) qs.set("type", params.type);
   if (params?.featured) qs.set("featured", "true");
-  return getJson<ExperienceList[]>(`/api/experiences/?${qs.toString()}`);
-};
+  const query = qs.toString();
+  return getJson<ExperienceList[]>(`/api/experiences/${query ? `?${query}` : ""}`);
+}
 
-export const fetchExperienceDetail = (slug: string) =>
-  getJson<ExperienceDetail>(`/api/experiences/${slug}/`);
+export function fetchExperienceDetail(slug: string) {
+  return getJson<ExperienceDetail>(`/api/experiences/${slug}/`);
+}
 
-export const fetchHomepage = () =>
-  getJson<CmsPage>("/api/pages/home/");
+export function fetchHomepage() {
+  return getJson<CmsPage>("/api/pages/home/");
+}
 
-export const fetchPageBySlug = (slug: string) =>
-  getJson<CmsPage>(`/api/pages/${slug}/`);
+export function fetchPageBySlug(slug: string) {
+  return getJson<CmsPage>(`/api/pages/${slug}/`);
+}

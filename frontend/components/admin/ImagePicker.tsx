@@ -2,25 +2,14 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-export type PickedAsset = {
-  id: number | string;
-  title?: string;
-  alt_text?: string;
-  type?: string;
-  url: string;
-  width?: number | null;
-  height?: number | null;
-};
-
-type ApiAsset = {
+type Asset = {
   id: number;
   type: string;
-  title?: string;
-  alt_text?: string;
-  file?: string | null;         // e.g. "/media/media_assets/2025/12/x.jpg"
-  external_url?: string | null; // e.g. "https://..."
-  width?: number | null;
-  height?: number | null;
+  title: string;
+  alt_text: string;
+  caption: string;
+  external_url: string;
+  url: string; // computed by serializer for uploaded file
 };
 
 export function ImagePicker({
@@ -30,122 +19,119 @@ export function ImagePicker({
 }: {
   open: boolean;
   onClose: () => void;
-  onPick: (asset: PickedAsset) => void;
+  onPick: (asset: Asset) => void;
 }) {
-  const API = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
   const [loading, setLoading] = useState(false);
-  const [items, setItems] = useState<ApiAsset[]>([]);
+  const [items, setItems] = useState<Asset[]>([]);
   const [q, setQ] = useState("");
   const [err, setErr] = useState<string | null>(null);
 
+  const filtered = useMemo(() => {
+    const needle = q.trim().toLowerCase();
+    if (!needle) return items;
+    return items.filter((a) => (a.title || "").toLowerCase().includes(needle));
+  }, [items, q]);
+
   useEffect(() => {
     if (!open) return;
-
     (async () => {
-      setLoading(true);
       setErr(null);
+      setLoading(true);
       try {
-        // IMPORTANT: this assumes you already have an admin endpoint listing media assets
-        // e.g. GET /api/admin/media-assets/?type=image
-        const res = await fetch(`${API}/api/admin/media-assets/?type=image`, {
-          credentials: "include",
-          cache: "no-store",
-        });
-        if (!res.ok) {
-          setErr(await res.text().catch(() => "Failed to load media assets"));
-          setItems([]);
-          setLoading(false);
-          return;
-        }
+        const res = await fetch("/api/admin/media", { cache: "no-store", credentials: "include" });
+        if (!res.ok) throw new Error(await res.text());
         const data = await res.json();
-        // supports both {results:[...]} and [...]
-        const list = Array.isArray(data) ? data : (data.results ?? []);
-        setItems(list);
+        // If you later add filtering server-side, this still works.
+        setItems((data || []).filter((x: any) => x.type === "image"));
       } catch (e: any) {
-        setErr(e?.message ?? "Failed to load media assets");
+        setErr(e?.message || "Failed to load media");
       } finally {
         setLoading(false);
       }
     })();
-  }, [open, API]);
+  }, [open]);
 
-  const filtered = useMemo(() => {
-    const query = q.trim().toLowerCase();
-    if (!query) return items;
-    return items.filter((it) => {
-      const t = (it.title ?? "").toLowerCase();
-      const a = (it.alt_text ?? "").toLowerCase();
-      const u = (it.external_url ?? it.file ?? "").toLowerCase();
-      return t.includes(query) || a.includes(query) || u.includes(query);
+  async function upload(file: File) {
+    setErr(null);
+    const form = new FormData();
+    form.append("file", file);
+
+    const res = await fetch("/api/admin/media/upload/", {
+      method: "POST",
+      body: form,
+      credentials: "include",
     });
-  }, [items, q]);
 
-  function toUrl(it: ApiAsset) {
-    const raw = it.external_url || it.file || "";
-    if (!raw) return "";
-    // If backend returns "/media/..." make it absolute for the frontend
-    if (raw.startsWith("http://") || raw.startsWith("https://")) return raw;
-    return `${API}${raw}`;
+    if (!res.ok) {
+      setErr(await res.text().catch(() => "Upload failed"));
+      return;
+    }
+
+    const created = await res.json();
+    setItems((prev) => [created, ...prev]);
   }
 
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-50">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="absolute left-1/2 top-1/2 w-[min(980px,92vw)] -translate-x-1/2 -translate-y-1/2 rounded-lg bg-white shadow-lg">
-        <div className="flex items-center justify-between border-b px-4 py-3">
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+      <div className="w-full max-w-4xl bg-white rounded border shadow-sm">
+        <div className="p-3 border-b flex items-center justify-between">
           <div className="font-semibold">Pick an image</div>
-          <button className="text-sm underline" onClick={onClose}>
-            Close
-          </button>
+          <button className="underline" onClick={onClose}>Close</button>
         </div>
 
-        <div className="p-4 space-y-3">
-          <input
-            className="border w-full p-2 rounded"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search title / alt text / URL"
-          />
-
+        <div className="p-3 space-y-3">
           {err ? <div className="text-sm text-red-600">{err}</div> : null}
-          {loading ? <div className="text-sm">Loading...</div> : null}
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 max-h-[60vh] overflow-auto">
-            {filtered.map((it) => {
-              const url = toUrl(it);
-              if (!url) return null;
+          <div className="flex gap-3 items-center">
+            <input
+              className="border rounded p-2 w-full"
+              placeholder="Search by title..."
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
 
-              return (
-                <button
-                  key={it.id}
-                  className="border rounded overflow-hidden text-left hover:shadow-sm"
-                  onClick={() =>
-                    onPick({
-                      id: it.id,
-                      title: it.title,
-                      alt_text: it.alt_text,
-                      type: it.type,
-                      url,
-                      width: it.width,
-                      height: it.height,
-                    })
-                  }
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt={it.alt_text || it.title || ""} className="w-full h-32 object-cover" />
-                  <div className="p-2 text-xs">
-                    <div className="font-semibold line-clamp-1">{it.title || "Untitled"}</div>
-                    <div className="text-muted-foreground line-clamp-1">{it.alt_text || ""}</div>
-                  </div>
-                </button>
-              );
-            })}
+            <label className="border rounded px-3 py-2 cursor-pointer bg-white hover:bg-gray-50">
+              Upload
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) upload(f);
+                }}
+              />
+            </label>
           </div>
 
-          {filtered.length === 0 && !loading ? (
-            <div className="text-sm text-muted-foreground">No images found.</div>
+          {loading ? <div className="text-sm text-gray-600">Loading...</div> : null}
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {filtered.map((a) => (
+              <button
+                key={a.id}
+                className="border rounded overflow-hidden text-left hover:shadow-sm"
+                onClick={() => onPick(a)}
+              >
+                <div className="bg-gray-100 aspect-video">
+                  {/* prefer uploaded file url, fallback to external_url */}
+                  <img
+                    src={a.url || a.external_url}
+                    alt={a.alt_text || a.title || "image"}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+                <div className="p-2 text-sm">
+                  <div className="font-medium truncate">{a.title || `Image #${a.id}`}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          {!loading && filtered.length === 0 ? (
+            <div className="text-sm text-gray-600">No images found.</div>
           ) : null}
         </div>
       </div>

@@ -18,15 +18,40 @@ class MediaAssetSerializer(serializers.ModelSerializer):
 
 
 class SiteSettingsSerializer(serializers.ModelSerializer):
+    # READ (nested objects for UI)
     logo = MediaAssetSerializer(read_only=True)
     favicon = MediaAssetSerializer(read_only=True)
     default_og_image = MediaAssetSerializer(read_only=True)
+
+    # WRITE (IDs from Next.js admin)
+    logo_id = serializers.PrimaryKeyRelatedField(
+        source="logo",
+        queryset=MediaAsset.objects.all(),
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
+    favicon_id = serializers.PrimaryKeyRelatedField(
+        source="favicon",
+        queryset=MediaAsset.objects.all(),
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
+    default_og_image_id = serializers.PrimaryKeyRelatedField(
+        source="default_og_image",
+        queryset=MediaAsset.objects.all(),
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
 
     class Meta:
         model = SiteSettings
         fields = (
             "site_name", "tagline",
             "logo", "favicon", "default_og_image",
+            "logo_id", "favicon_id", "default_og_image_id",
             "instagram", "x_twitter", "facebook", "youtube", "tiktok",
             "contact_email", "contact_phone", "address", "map_embed_url",
             "default_seo_title", "default_seo_description",

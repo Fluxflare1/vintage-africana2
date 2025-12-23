@@ -1,143 +1,93 @@
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.forms.models import model_to_dict
-from django.utils.text import slugify
-import json
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
 
-from apps.cms.models import Page, SiteSettings, NavigationMenu, NavigationItem
-
-
-def _require_staff(request):
-    return request.user.is_authenticated and request.user.is_staff
-
-
-def _page_dict(p: Page):
-    d = model_to_dict(
-        p,
-        fields=[
-            "id",
-            "title",
-            "slug",
-            "excerpt",
-            "status",
-            "published_at",
-            "is_homepage",
-            "hero_enabled",
-            "hero_cta_label",
-            "hero_cta_url",
-            "seo_title",
-            "seo_description",
-            "canonical_url",
-            "og_title",
-            "og_description",
-        ],
-    )
-    d["content"] = p.content
-    return d
+from apps.cms.models import SiteSettings, NavigationMenu, NavigationItem
+from .admin_serializers import (
+    SiteSettingsSerializer,
+    NavigationMenuSerializer,
+    NavigationItemSerializer,
+)
 
 
-@csrf_exempt
-def admin_pages(request):
-    if not _require_staff(request):
-        return JsonResponse({"detail": "Unauthorized"}, status=401)
+# ---------- SETTINGS ----------
+@api_view(["GET", "PUT"])
+@permission_classes([IsAuthenticated])
+def admin_settings(request):
+    obj = SiteSettings.objects.first()
+    if not obj:
+        obj = SiteSettings.objects.create()
 
     if request.method == "GET":
-        pages = Page.objects.all().order_by("-id")
-        return JsonResponse([_page_dict(p) for p in pages], safe=False)
+        return Response(SiteSettingsSerializer(obj).data)
 
-    if request.method == "POST":
-        data = json.loads(request.body.decode("utf-8") or "{}")
-        title = data.get("title", "").strip()
-        if not title:
-            return JsonResponse({"detail": "title is required"}, status=400)
-
-        slug = (data.get("slug") or slugify(title)).strip() or slugify(title)
-        if Page.objects.filter(slug=slug).exists():
-            return JsonResponse({"detail": "slug already exists"}, status=400)
-
-        p = Page.objects.create(
-            title=title,
-            slug=slug,
-            excerpt=data.get("excerpt", ""),
-            status=data.get("status", "draft"),
-            is_homepage=bool(data.get("is_homepage", False)),
-            hero_enabled=bool(data.get("hero_enabled", False)),
-            hero_cta_label=data.get("hero_cta_label") or "",
-            hero_cta_url=data.get("hero_cta_url") or "",
-            content=data.get("content") or [],
-        )
-        return JsonResponse(_page_dict(p), status=201)
-
-    return JsonResponse({"detail": "Method not allowed"}, status=405)
+    serializer = SiteSettingsSerializer(obj, data=request.data, partial=True)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data)
 
 
-@csrf_exempt
-def admin_page_detail(request, page_id: int):
-    if not _require_staff(request):
-        return JsonResponse({"detail": "Unauthorized"}, status=401)
+# ---------- NAVIGATION MENUS ----------
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def admin_nav_menus(request):
+    if request.method == "GET":
+        menus = NavigationMenu.objects.all().order_by("id")
+        return Response(NavigationMenuSerializer(menus, many=True).data)
 
-    try:
-        p = Page.objects.get(id=page_id)
-    except Page.DoesNotExist:
-        return JsonResponse({"detail": "Not found"}, status=404)
+    serializer = NavigationMenuSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    menu = serializer.save()
+    return Response(NavigationMenuSerializer(menu).data, status=status.HTTP_201_CREATED)
+
+
+@api_view(["GET", "PUT", "DELETE"])
+@permission_classes([IsAuthenticated])
+def admin_nav_menu_detail(request, menu_id: int):
+    menu = NavigationMenu.objects.get(id=menu_id)
 
     if request.method == "GET":
-        return JsonResponse(_page_dict(p))
-
-    if request.method in ("PUT", "PATCH"):
-        data = json.loads(request.body.decode("utf-8") or "{}")
-
-        for field in [
-            "title",
-            "slug",
-            "excerpt",
-            "status",
-            "is_homepage",
-            "hero_enabled",
-            "hero_cta_label",
-            "hero_cta_url",
-            "seo_title",
-            "seo_description",
-            "canonical_url",
-            "og_title",
-            "og_description",
-        ]:
-            if field in data:
-                setattr(p, field, data[field])
-
-        if "content" in data:
-            p.content = data["content"] or []
-
-        # ensure only one homepage
-        if p.is_homepage:
-            Page.objects.exclude(id=p.id).filter(is_homepage=True).update(is_homepage=False)
-
-        p.save()
-        return JsonResponse(_page_dict(p))
+        return Response(NavigationMenuSerializer(menu).data)
 
     if request.method == "DELETE":
-        p.delete()
-        return JsonResponse({"ok": True})
+        menu.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-    return JsonResponse({"detail": "Method not allowed"}, status=405)
+    serializer = NavigationMenuSerializer(menu, data=request.data, partial=True)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(NavigationMenuSerializer(menu).data)
 
 
-@csrf_exempt
-def admin_site_settings(request):
-    if not _require_staff(request):
-        return JsonResponse({"detail": "Unauthorized"}, status=401)
-
-    obj, _ = SiteSettings.objects.get_or_create(defaults={"site_name": "Vintage Africana", "tagline": ""})
+# ---------- NAV ITEMS ----------
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def admin_nav_items(request, menu_id: int):
+    menu = NavigationMenu.objects.get(id=menu_id)
 
     if request.method == "GET":
-        return JsonResponse(model_to_dict(obj))
+        items = NavigationItem.objects.filter(menu=menu).order_by("order", "id")
+        return Response(NavigationItemSerializer(items, many=True).data)
 
-    if request.method in ("PUT", "PATCH"):
-        data = json.loads(request.body.decode("utf-8") or "{}")
-        for k, v in data.items():
-            if hasattr(obj, k):
-                setattr(obj, k, v)
-        obj.save()
-        return JsonResponse(model_to_dict(obj))
+    data = request.data.copy()
+    data["menu"] = menu.id
+    serializer = NavigationItemSerializer(data=data)
+    serializer.is_valid(raise_exception=True)
+    item = serializer.save()
+    return Response(NavigationItemSerializer(item).data, status=status.HTTP_201_CREATED)
 
-    return JsonResponse({"detail": "Method not allowed"}, status=405)
+
+@api_view(["PUT", "DELETE"])
+@permission_classes([IsAuthenticated])
+def admin_nav_item_detail(request, item_id: int):
+    item = NavigationItem.objects.get(id=item_id)
+
+    if request.method == "DELETE":
+        item.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    serializer = NavigationItemSerializer(item, data=request.data, partial=True)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data)

@@ -1,33 +1,56 @@
+// frontend/app/admin/dashboard/page.tsx
 import Link from "next/link";
 
-async function getMe() {
-  const res = await fetch("http://127.0.0.1:8000/api/admin/me/", {
-    cache: "no-store",
-    credentials: "include",
-  }).catch(() => null);
-
-  // NOTE: In browser navigation this should hit same-origin.
-  // For server rendering in dev, it may not carry cookies.
-  return res;
+function Card({
+  title,
+  desc,
+  href,
+}: {
+  title: string;
+  desc: string;
+  href: string;
+}) {
+  return (
+    <Link href={href} className="block rounded border bg-white p-4 hover:shadow-sm">
+      <div className="font-semibold">{title}</div>
+      <div className="text-sm text-gray-600 mt-1">{desc}</div>
+      <div className="text-sm underline mt-3">Open</div>
+    </Link>
+  );
 }
 
-export default async function AdminDashboard() {
-  // Minimal dashboard (no hard auth enforcement yet in SSR)
+export default function AdminDashboard() {
   return (
-    <main className="space-y-4">
-      <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-
-      <div className="space-y-2">
-        <Link className="underline" href="/admin/pages">Pages</Link>
-        <br />
-        <Link className="underline" href="/admin/settings">Site Settings</Link>
+    <div className="space-y-5">
+      <div>
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <p className="text-sm text-gray-600">
+          Manage content, navigation, settings, and media.
+        </p>
       </div>
 
-      <form action="/api/admin/logout/" method="post">
-        <button className="border px-3 py-2 rounded" type="submit">
-          Logout
-        </button>
-      </form>
-    </main>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Card
+          title="Pages"
+          desc="Create and edit website pages (Homepage, About, etc.)"
+          href="/admin/pages"
+        />
+        <Card
+          title="Navigation"
+          desc="Manage header/footer menus and links"
+          href="/admin/navigation"
+        />
+        <Card
+          title="Settings"
+          desc="Site identity, SEO defaults, social links, logo/favicon"
+          href="/admin/settings"
+        />
+        <Card
+          title="Media Library"
+          desc="Upload and pick images used across the site"
+          href="/admin/media"
+        />
+      </div>
+    </div>
   );
 }

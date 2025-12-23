@@ -127,3 +127,25 @@ class PageSerializer(serializers.ModelSerializer):
             "og_title", "og_description",
             "is_homepage",
         )
+
+
+class AdminSiteSettingsWriteSerializer(serializers.ModelSerializer):
+    logo_id = serializers.PrimaryKeyRelatedField(
+        queryset=MediaAsset.objects.all(), required=False, allow_null=True, source="logo"
+    )
+    favicon_id = serializers.PrimaryKeyRelatedField(
+        queryset=MediaAsset.objects.all(), required=False, allow_null=True, source="favicon"
+    )
+    default_og_image_id = serializers.PrimaryKeyRelatedField(
+        queryset=MediaAsset.objects.all(), required=False, allow_null=True, source="default_og_image"
+    )
+
+    class Meta:
+        model = SiteSettings
+        fields = (
+            "site_name", "tagline",
+            "logo_id", "favicon_id", "default_og_image_id",
+            "instagram", "x_twitter", "facebook", "youtube", "tiktok",
+            "contact_email", "contact_phone", "address", "map_embed_url",
+            "default_seo_title", "default_seo_description",
+        )

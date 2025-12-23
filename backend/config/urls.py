@@ -20,6 +20,7 @@ urlpatterns = [
     path("api/", include("apps.users.api.urls")),
     path("api/", include("apps.cms.api.admin_urls")),
     path("api/", include("apps.cms.api.admin_nav_urls")),
+    path("api/", include("apps.media_library.api.admin_urls")),
 ]
 
 if settings.DEBUG:

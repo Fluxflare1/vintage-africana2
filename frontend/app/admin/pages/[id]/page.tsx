@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ImagePicker } from "@/components/ImagePicker";
+import { ImagePicker, PickedAsset } from "@/components/admin/ImagePicker";
 
 type Block =
   | { type: "heading"; level: number; text: string }
@@ -10,40 +10,66 @@ type Block =
   | { type: "cta"; label: string; url: string };
 
 export default function EditPage() {
+  const API = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
   const params = useParams<{ id: string }>();
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
+
+  // basic
   const [title, setTitle] = useState("");
   const [slug, setSlug] = useState("");
   const [status, setStatus] = useState<"draft" | "published">("draft");
   const [isHomepage, setIsHomepage] = useState(false);
+
+  // hero + cover
+  const [heroEnabled, setHeroEnabled] = useState(false);
+  const [heroAsset, setHeroAsset] = useState<string>("");     // URL
+  const [coverImage, setCoverImage] = useState<string>("");   // URL
+  const [heroCtaLabel, setHeroCtaLabel] = useState<string>("");
+  const [heroCtaUrl, setHeroCtaUrl] = useState<string>("");
+
+  // blocks
   const [blocks, setBlocks] = useState<Block[]>([]);
-  const [err, setErr] = useState<string | null>(null);
-  const [coverImage, setCoverImage] = useState<string>("");
+
+  // picker state
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState<"hero" | "cover">("hero");
+
+  const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
     (async () => {
       setErr(null);
-      const res = await fetch(`/api/admin/pages/${params.id}/`, {
+
+      const res = await fetch(`${API}/api/admin/pages/${params.id}/`, {
         credentials: "include",
+        cache: "no-store",
       });
+
       if (!res.ok) {
         setErr(await res.text().catch(() => "Failed to load"));
         setLoading(false);
         return;
       }
+
       const p = await res.json();
+
       setTitle(p.title || "");
       setSlug(p.slug || "");
       setStatus(p.status || "draft");
       setIsHomepage(!!p.is_homepage);
       setBlocks(p.content || []);
+
+      setHeroEnabled(!!p.hero_enabled);
+      setHeroAsset(p.hero_asset || "");
       setCoverImage(p.cover_image || "");
+      setHeroCtaLabel(p.hero_cta_label || "");
+      setHeroCtaUrl(p.hero_cta_url || "");
+
       setLoading(false);
     })();
-  }, [params.id]);
+  }, [params.id, API]);
 
   function addBlock(type: Block["type"]) {
     if (type === "heading") setBlocks([...blocks, { type: "heading", level: 2, text: "" }]);
@@ -51,37 +77,52 @@ export default function EditPage() {
     if (type === "cta") setBlocks([...blocks, { type: "cta", label: "", url: "" }]);
   }
 
+  function onPick(asset: PickedAsset) {
+    if (pickerTarget === "hero") setHeroAsset(asset.url);
+    if (pickerTarget === "cover") setCoverImage(asset.url);
+    setPickerOpen(false);
+  }
+
   async function save() {
     setErr(null);
-    const res = await fetch(`/api/admin/pages/${params.id}/`, {
+
+    const payload = {
+      title,
+      slug,
+      status,
+      is_homepage: isHomepage,
+      content: blocks,
+
+      hero_enabled: heroEnabled,
+      hero_asset: heroAsset || null,
+      cover_image: coverImage || null,
+      hero_cta_label: heroCtaLabel,
+      hero_cta_url: heroCtaUrl,
+    };
+
+    const res = await fetch(`${API}/api/admin/pages/${params.id}/`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({
-        title,
-        slug,
-        status,
-        is_homepage: isHomepage,
-        cover_image: coverImage,
-        content: blocks,
-      }),
+      body: JSON.stringify(payload),
     });
 
     if (!res.ok) {
       setErr(await res.text().catch(() => "Save failed"));
       return;
     }
+
     router.refresh();
   }
 
   if (loading) return <main>Loading...</main>;
 
   return (
-    <main className="space-y-4 max-w-3xl">
+    <main className="space-y-6 max-w-3xl">
       <h1 className="text-2xl font-bold">Edit Page</h1>
-
       {err ? <p className="text-red-600 text-sm">{err}</p> : null}
 
+      {/* Basics */}
       <div className="space-y-2">
         <input className="border w-full p-2 rounded" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Title" />
         <input className="border w-full p-2 rounded" value={slug} onChange={(e) => setSlug(e.target.value)} placeholder="Slug (home, about, ...)" />
@@ -99,38 +140,89 @@ export default function EditPage() {
         </div>
       </div>
 
-      <div className="border rounded p-3 space-y-2">
-        <div className="font-semibold">Cover Image</div>
-
-        {coverImage ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={coverImage} alt="" className="h-40 rounded object-cover border" />
-        ) : (
-          <div className="text-sm text-muted-foreground">No cover image selected.</div>
-        )}
-
-        <div className="flex gap-2">
-          <button className="border px-3 py-2 rounded" onClick={() => setPickerOpen(true)}>
-            Pick image
-          </button>
-
-          {coverImage ? (
-            <button className="border px-3 py-2 rounded" onClick={() => setCoverImage("")}>
-              Clear
-            </button>
-          ) : null}
+      {/* Hero + Cover */}
+      <section className="border rounded p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold">Hero & Cover</h2>
+          <label className="flex gap-2 items-center text-sm">
+            <input type="checkbox" checked={heroEnabled} onChange={(e) => setHeroEnabled(e.target.checked)} />
+            Enable hero
+          </label>
         </div>
-      </div>
 
-      <ImagePicker
-        open={pickerOpen}
-        onClose={() => setPickerOpen(false)}
-        onPick={(asset) => {
-          setCoverImage(asset.url);
-          setPickerOpen(false);
-        }}
-      />
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Hero Image</div>
+            {heroAsset ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={heroAsset} alt="" className="h-36 w-full object-cover rounded border" />
+            ) : (
+              <div className="h-36 rounded border flex items-center justify-center text-sm text-muted-foreground">
+                No hero image
+              </div>
+            )}
 
+            <div className="flex gap-2">
+              <button
+                className="border px-3 py-2 rounded"
+                onClick={() => {
+                  setPickerTarget("hero");
+                  setPickerOpen(true);
+                }}
+              >
+                Pick hero image
+              </button>
+              <button className="border px-3 py-2 rounded" onClick={() => setHeroAsset("")}>
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <div className="text-sm font-semibold">Cover Image (OG)</div>
+            {coverImage ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={coverImage} alt="" className="h-36 w-full object-cover rounded border" />
+            ) : (
+              <div className="h-36 rounded border flex items-center justify-center text-sm text-muted-foreground">
+                No cover image
+              </div>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                className="border px-3 py-2 rounded"
+                onClick={() => {
+                  setPickerTarget("cover");
+                  setPickerOpen(true);
+                }}
+              >
+                Pick cover image
+              </button>
+              <button className="border px-3 py-2 rounded" onClick={() => setCoverImage("")}>
+                Clear
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-2 md:grid-cols-2">
+          <input
+            className="border w-full p-2 rounded"
+            value={heroCtaLabel}
+            onChange={(e) => setHeroCtaLabel(e.target.value)}
+            placeholder="Hero CTA Label (e.g. Shop now)"
+          />
+          <input
+            className="border w-full p-2 rounded"
+            value={heroCtaUrl}
+            onChange={(e) => setHeroCtaUrl(e.target.value)}
+            placeholder="Hero CTA URL (e.g. /collections)"
+          />
+        </div>
+      </section>
+
+      {/* Blocks */}
       <div className="border rounded p-3 space-y-3">
         <div className="flex gap-2">
           <button className="border px-3 py-2 rounded" onClick={() => addBlock("heading")}>+ Heading</button>
@@ -208,10 +300,7 @@ export default function EditPage() {
               </>
             ) : null}
 
-            <button
-              className="text-red-600 underline text-sm"
-              onClick={() => setBlocks(blocks.filter((_, i) => i !== idx))}
-            >
+            <button className="text-red-600 underline text-sm" onClick={() => setBlocks(blocks.filter((_, i) => i !== idx))}>
               Remove block
             </button>
           </div>
@@ -222,6 +311,8 @@ export default function EditPage() {
         <button className="border px-4 py-2 rounded" onClick={save}>Save</button>
         <button className="border px-4 py-2 rounded" onClick={() => router.push("/admin/pages")}>Back</button>
       </div>
+
+      <ImagePicker open={pickerOpen} onClose={() => setPickerOpen(false)} onPick={onPick} />
     </main>
   );
 }

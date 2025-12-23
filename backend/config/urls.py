@@ -17,7 +17,10 @@ urlpatterns = [
     path("api/", include("apps.collections.api.urls")),
     path("api/", include("apps.stories.api.urls")),
     path("api/", include("apps.experiences.api.urls")),
+    path("api/", include("apps.users.api.urls")),
 ]
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+
+

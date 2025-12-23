@@ -1,4 +1,3 @@
-// frontend/app/admin/dashboard/page.tsx
 import Link from "next/link";
 
 function Card({
@@ -49,6 +48,11 @@ export default function AdminDashboard() {
           title="Media Library"
           desc="Upload and pick images used across the site"
           href="/admin/media"
+        />
+        <Card
+          title="Homepage (Hero)"
+          desc="Edit homepage hero section and layout"
+          href="/admin/homepage"
         />
       </div>
     </div>

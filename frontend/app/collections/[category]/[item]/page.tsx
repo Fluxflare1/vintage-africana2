@@ -11,7 +11,7 @@ export async function generateMetadata({
   const item = await fetchItemDetail(params.category, params.item);
   return buildMetadata({
     title: item.name,
-    excerpt: item.item_type || item.short_description,
+    excerpt: item.item_type || (item as any).short_description || "",
     seo_title: (item as any).seo_title,
     seo_description: (item as any).seo_description,
     canonical_url: (item as any).canonical_url,

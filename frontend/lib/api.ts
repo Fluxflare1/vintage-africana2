@@ -1,3 +1,5 @@
+// frontend/lib/api.ts
+
 type ApiMenuItem = {
   label: string;
   url: string;
@@ -145,25 +147,37 @@ export type CmsPage = {
 };
 
 /**
- * IMPORTANT:
- * - In the browser: use relative URLs so requests go to the Next.js server (same origin).
- * - On the server (Docker): use INTERNAL_API_BASE_URL=http://backend:8000.
+ * Production-safe base URL resolution:
+ * - Browser MUST call a reachable host (e.g. http://localhost:8000), not Docker service names.
+ * - Server-side (Next.js) inside Docker SHOULD call http://backend:8000 via INTERNAL_API_BASE_URL.
+ *
+ * Required envs:
+ * - docker-compose (frontend service):
+ *   INTERNAL_API_BASE_URL=http://backend:8000
+ *   NEXT_PUBLIC_API_BASE_URL=http://localhost:8000
  */
 function resolveBaseUrl(): string {
-  // Browser
-  if (typeof window !== "undefined") return "";
+  // Browser: must use NEXT_PUBLIC_* (Docker service names won't resolve in the browser)
+  if (typeof window !== "undefined") {
+    return (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000").replace(/\/+$/, "");
+  }
 
-  // Server (Node) - inside Docker
+  // Server (Node): prefer internal docker network URL if available
   const internal = process.env.INTERNAL_API_BASE_URL;
-  if (internal) return internal;
+  if (internal) return internal.replace(/\/+$/, "");
 
-  // Fallback (useful for non-docker server runs)
-  return process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
+  // Fallback for non-docker server runs
+  return (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000").replace(/\/+$/, "");
+}
+
+function joinUrl(base: string, path: string): string {
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${p}`;
 }
 
 async function getJson<T>(path: string): Promise<T> {
   const baseUrl = resolveBaseUrl();
-  const url = `${baseUrl}${path}`;
+  const url = joinUrl(baseUrl, path);
 
   const res = await fetch(url, {
     cache: "no-store",
@@ -171,8 +185,10 @@ async function getJson<T>(path: string): Promise<T> {
   });
 
   if (!res.ok) {
+    // Avoid crashing with large HTML error pages; keep a short excerpt for debugging
     const text = await res.text().catch(() => "");
-    throw new Error(`API error ${res.status} for ${path}${text ? ` :: ${text}` : ""}`);
+    const excerpt = text ? text.slice(0, 500) : "";
+    throw new Error(`API error ${res.status} for ${path}${excerpt ? ` :: ${excerpt}` : ""}`);
   }
 
   return res.json();

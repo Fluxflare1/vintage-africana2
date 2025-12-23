@@ -3,48 +3,64 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000";
-
 export default function AdminLogin() {
   const router = useRouter();
-  const [error, setError] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [err, setErr] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
+    setErr(null);
+    setLoading(true);
 
-    const form = e.currentTarget;
-    const data = {
-      email: form.email.value,
-      password: form.password.value,
-    };
-
-    const res = await fetch(`${API_BASE}/api/auth/login/`, {
+    const res = await fetch("/api/admin/login/", {
       method: "POST",
-      credentials: "include",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data),
+      credentials: "include",
+      body: JSON.stringify({ username, password }),
     });
 
+    setLoading(false);
+
     if (!res.ok) {
-      setError("Invalid credentials");
+      const text = await res.text().catch(() => "");
+      setErr(text || "Login failed");
       return;
     }
 
-    router.push("/admin/app/dashboard");
+    router.push("/admin/dashboard");
   }
 
   return (
-    <main style={{ height: "100vh", display: "grid", placeItems: "center" }}>
-      <form onSubmit={onSubmit} style={{ width: 320 }}>
-        <h2>Admin Login</h2>
+    <main className="space-y-4 max-w-md">
+      <h1 className="text-2xl font-bold">Login</h1>
 
-        <input name="email" placeholder="Email" required />
-        <input name="password" type="password" placeholder="Password" required />
+      <form onSubmit={submit} className="space-y-3">
+        <input
+          className="border w-full p-2 rounded"
+          placeholder="Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+        />
+        <input
+          className="border w-full p-2 rounded"
+          placeholder="Password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
 
-        {error && <p style={{ color: "red" }}>{error}</p>}
-        <button type="submit">Login</button>
+        {err ? <p className="text-red-600 text-sm">{err}</p> : null}
+
+        <button
+          className="border px-4 py-2 rounded"
+          type="submit"
+          disabled={loading}
+        >
+          {loading ? "Logging in..." : "Login"}
+        </button>
       </form>
     </main>
   );

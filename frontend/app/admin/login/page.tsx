@@ -1,48 +1,72 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+
+function getCookie(name: string) {
+  if (typeof document === "undefined") return "";
+  const m = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
+  return m ? decodeURIComponent(m[2]) : "";
+}
 
 export default function AdminLogin() {
   const router = useRouter();
+  const sp = useSearchParams();
+
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
 
-  async function submit(e: React.FormEvent) {
+  useEffect(() => {
+    // Ensure csrftoken cookie exists
+    fetch(`${BACKEND}/api/auth/csrf/`, { credentials: "include" }).catch(() => {});
+  }, []);
+
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
-    setLoading(true);
+    setBusy(true);
 
-    const res = await fetch("/api/admin/login/", {
+    const csrftoken = getCookie("csrftoken");
+
+    const res = await fetch(`${BACKEND}/api/auth/login/`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": csrftoken,
+      },
       body: JSON.stringify({ username, password }),
     });
 
-    setLoading(false);
+    setBusy(false);
 
     if (!res.ok) {
-      const text = await res.text().catch(() => "");
-      setErr(text || "Login failed");
+      const t = await res.text().catch(() => "");
+      setErr(t || "Login failed");
       return;
     }
 
-    router.push("/admin/dashboard");
+    const next = sp.get("next") || "/admin/dashboard";
+    router.replace(next);
   }
 
   return (
-    <main className="space-y-4 max-w-md">
-      <h1 className="text-2xl font-bold">Login</h1>
+    <main className="max-w-md mx-auto p-6 space-y-4">
+      <h1 className="text-2xl font-bold">Admin Login</h1>
 
-      <form onSubmit={submit} className="space-y-3">
+      {err ? <p className="text-red-600 text-sm whitespace-pre-wrap">{err}</p> : null}
+
+      <form onSubmit={onSubmit} className="space-y-3">
         <input
           className="border w-full p-2 rounded"
           placeholder="Username"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
+          autoComplete="username"
         />
         <input
           className="border w-full p-2 rounded"
@@ -50,16 +74,11 @@ export default function AdminLogin() {
           type="password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
         />
 
-        {err ? <p className="text-red-600 text-sm">{err}</p> : null}
-
-        <button
-          className="border px-4 py-2 rounded"
-          type="submit"
-          disabled={loading}
-        >
-          {loading ? "Logging in..." : "Login"}
+        <button className="border px-4 py-2 rounded w-full" disabled={busy}>
+          {busy ? "Logging in..." : "Login"}
         </button>
       </form>
     </main>

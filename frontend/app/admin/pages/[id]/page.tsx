@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { ImagePicker, PickedAsset } from "@/components/admin/ImagePicker";
+import { ImagePicker, MediaAsset } from "@/components/ImagePicker";
 
 type Block =
   | { type: "heading"; level: number; text: string }
@@ -81,7 +81,7 @@ export default function EditPage() {
     if (type === "cta") setBlocks([...blocks, { type: "cta", label: "", url: "" }]);
   }
 
-  function onPick(asset: PickedAsset) {
+  function onPick(asset: MediaAsset) {
     if (pickerTarget === "hero") {
       setHeroAssetId(asset.id);
       setHeroAssetUrl(asset.url); // for preview only

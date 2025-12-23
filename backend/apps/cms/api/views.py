@@ -1,3 +1,12 @@
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework import status
+
+from apps.cms.models import SiteSettings, Page
+from apps.core.permissions import IsAdmin
+from .serializers import PageSerializer, SiteSettingsSerializer, AdminSiteSettingsWriteSerializer
+
+
 @api_view(["GET", "POST"])
 @permission_classes([IsAdmin])
 def admin_pages_v2(request):
@@ -42,24 +51,25 @@ def admin_page_detail_v2(request, id: int):
     return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-@api_view(["GET", "PUT"])
+@api_view(["GET", "PUT", "PATCH"])
 @permission_classes([IsAdmin])
 def admin_site_settings(request):
     """
     GET /api/admin/settings/
     PUT /api/admin/settings/
+    PATCH /api/admin/settings/
     """
     obj = SiteSettings.objects.order_by("id").first()
-    if not obj and request.method == "GET":
-        return Response({"detail": "SiteSettings not configured."}, status=status.HTTP_404_NOT_FOUND)
-
     if not obj:
-        obj = SiteSettings()
+        obj = SiteSettings.objects.create()
 
     if request.method == "GET":
         return Response(SiteSettingsSerializer(obj, context={"request": request}).data)
 
-    serializer = SiteSettingsSerializer(obj, data=request.data, partial=True, context={"request": request})
-    serializer.is_valid(raise_exception=True)
-    obj = serializer.save()
+    serializer = AdminSiteSettingsWriteSerializer(obj, data=request.data, partial=True, context={"request": request})
+    if not serializer.is_valid():
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    serializer.save()
+    # Return full read serializer (includes nested media objects)
     return Response(SiteSettingsSerializer(obj, context={"request": request}).data)

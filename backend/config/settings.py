@@ -113,6 +113,9 @@ CORS_ALLOWED_ORIGINS = [
     if o.strip()
 ]
 
+# CORS: Allow cookies/sessions to work
+CORS_ALLOW_CREDENTIALS = True
+
 # DRF baseline (explicit + predictable)
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [],

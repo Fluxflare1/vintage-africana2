@@ -3,12 +3,19 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / ".env")  # reads backend/.env locally when you pull to laptop
+
+# Load backend/.env if present (local dev). Docker uses env_file in compose.
+load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "change-me-in-backend-env")
 DEBUG = os.getenv("DJANGO_DEBUG", "false").lower() == "true"
 
-ALLOWED_HOSTS = [h.strip() for h in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
+# IMPORTANT: include "backend" by default for docker-compose networking
+ALLOWED_HOSTS = [
+    h.strip()
+    for h in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,backend").split(",")
+    if h.strip()
+]
 
 # Custom User Model
 AUTH_USER_MODEL = "users.User"
@@ -63,7 +70,6 @@ TEMPLATES = [
 WSGI_APPLICATION = "config.wsgi.application"
 ASGI_APPLICATION = "config.asgi.application"
 
-# PostgreSQL (via env)
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
@@ -87,7 +93,8 @@ TIME_ZONE = os.getenv("DJANGO_TIME_ZONE", "Africa/Lagos")
 USE_I18N = True
 USE_TZ = True
 
-STATIC_URL = "static/"
+# IMPORTANT: STATIC_URL must start with "/" for admin + correct URLs
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 
@@ -96,12 +103,18 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-# CORS (comma-separated origins)
-cors_origins = [o.strip() for o in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000").split(",") if o.strip()]
-CORS_ALLOWED_ORIGINS = cors_origins
+# CORS: include your actual frontend port by default
+CORS_ALLOWED_ORIGINS = [
+    o.strip()
+    for o in os.getenv(
+        "CORS_ALLOWED_ORIGINS",
+        "http://localhost:3003,http://localhost:3000",
+    ).split(",")
+    if o.strip()
+]
 
-# DRF baseline
+# DRF baseline (explicit + predictable)
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [],
-    "DEFAULT_PERMISSION_CLASSES": [],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.AllowAny"],
 }

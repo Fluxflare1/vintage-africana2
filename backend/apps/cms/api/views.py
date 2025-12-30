@@ -1,12 +1,55 @@
+from django.utils import timezone
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
 from rest_framework import status
-from django.utils import timezone
 
 from apps.cms.models import SiteSettings, Page, NavigationMenu, NavigationItem
 from apps.core.permissions import IsAdmin
 from .serializers import PageSerializer, SiteSettingsSerializer, AdminSiteSettingsWriteSerializer
 
+
+# -------------------------
+# PUBLIC ENDPOINTS
+# -------------------------
+
+@api_view(["GET"])
+def site_settings(request):
+    obj = SiteSettings.objects.order_by("id").first()
+    if not obj:
+        return Response({"detail": "SiteSettings not configured."}, status=status.HTTP_404_NOT_FOUND)
+    return Response(SiteSettingsSerializer(obj, context={"request": request}).data)
+
+
+@api_view(["GET"])
+def navigation_menu(request, code: str):
+    obj = NavigationMenu.objects.filter(code=code).first()
+    if not obj:
+        return Response({"detail": "Navigation menu not found."}, status=status.HTTP_404_NOT_FOUND)
+
+    # Use serializer that returns nested items (your existing serializer supports this)
+    from .serializers import NavigationMenuSerializer  # local import to avoid circular imports
+    return Response(NavigationMenuSerializer(obj).data)
+
+
+@api_view(["GET"])
+def page_by_slug(request, slug: str):
+    obj = Page.objects.filter(slug=slug, status=Page.STATUS_PUBLISHED).first()
+    if not obj:
+        return Response({"detail": "Page not found."}, status=status.HTTP_404_NOT_FOUND)
+    return Response(PageSerializer(obj, context={"request": request}).data)
+
+
+@api_view(["GET"])
+def homepage(request):
+    obj = Page.objects.filter(is_homepage=True, status=Page.STATUS_PUBLISHED).first()
+    if not obj:
+        return Response({"detail": "Homepage not found."}, status=status.HTTP_404_NOT_FOUND)
+    return Response(PageSerializer(obj, context={"request": request}).data)
+
+
+# -------------------------
+# ADMIN ENDPOINTS (Next.js custom admin)
+# -------------------------
 
 @api_view(["GET", "POST"])
 @permission_classes([IsAdmin])
@@ -19,7 +62,6 @@ def admin_pages_v2(request):
         qs = Page.objects.all().order_by("-updated_at", "-id") if hasattr(Page, "updated_at") else Page.objects.all().order_by("-id")
         return Response(PageSerializer(qs, many=True, context={"request": request}).data)
 
-    # POST
     serializer = PageSerializer(data=request.data, context={"request": request})
     serializer.is_valid(raise_exception=True)
     obj = serializer.save()
@@ -47,7 +89,6 @@ def admin_page_detail_v2(request, id: int):
         obj = serializer.save()
         return Response(PageSerializer(obj, context={"request": request}).data)
 
-    # DELETE
     obj.delete()
     return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -68,11 +109,8 @@ def admin_site_settings(request):
         return Response(SiteSettingsSerializer(obj, context={"request": request}).data)
 
     serializer = AdminSiteSettingsWriteSerializer(obj, data=request.data, partial=True, context={"request": request})
-    if not serializer.is_valid():
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
+    serializer.is_valid(raise_exception=True)
     serializer.save()
-    # Return full read serializer (includes nested media objects)
     return Response(SiteSettingsSerializer(obj, context={"request": request}).data)
 
 
@@ -81,7 +119,6 @@ def admin_site_settings(request):
 def admin_setup_seed(request):
     created = {}
 
-    # 1) SiteSettings (singleton)
     settings = SiteSettings.objects.order_by("id").first()
     if not settings:
         settings = SiteSettings.objects.create(
@@ -92,7 +129,6 @@ def admin_setup_seed(request):
     else:
         created["site_settings"] = False
 
-    # 2) Navigation menus
     header, header_created = NavigationMenu.objects.get_or_create(
         code="header", defaults={"title": "Header Menu"}
     )
@@ -102,7 +138,6 @@ def admin_setup_seed(request):
     created["nav_header_menu"] = header_created
     created["nav_footer_menu"] = footer_created
 
-    # 3) Default navigation items (only if menu has none)
     if not header.items.exists():
         NavigationItem.objects.create(menu=header, label="Home", url="/", order=1, is_visible=True)
         NavigationItem.objects.create(menu=header, label="Collections", url="/collections", order=2, is_visible=True)
@@ -119,14 +154,13 @@ def admin_setup_seed(request):
     else:
         created["nav_footer_items"] = False
 
-    # 4) Homepage Page
-    homepage = Page.objects.filter(is_homepage=True).first()
-    if not homepage:
-        homepage = Page.objects.create(
+    homepage_obj = Page.objects.filter(is_homepage=True).first()
+    if not homepage_obj:
+        homepage_obj = Page.objects.create(
             title="Home",
             slug="home",
             is_homepage=True,
-            status=Page.STATUS_PUBLISHED,  # publish immediately so public site works
+            status=Page.STATUS_PUBLISHED,
             published_at=timezone.now(),
             content=[
                 {"type": "heading", "level": 1, "text": "Welcome to Vintage Africana"},
@@ -137,20 +171,12 @@ def admin_setup_seed(request):
         created["homepage_created"] = True
     else:
         created["homepage_created"] = False
-
-        # If homepage exists but isn't published, optionally publish it (safe default)
-        if homepage.status != Page.STATUS_PUBLISHED:
-            homepage.status = Page.STATUS_PUBLISHED
-            homepage.published_at = timezone.now()
-            homepage.save(update_fields=["status", "published_at"])
+        if homepage_obj.status != Page.STATUS_PUBLISHED:
+            homepage_obj.status = Page.STATUS_PUBLISHED
+            homepage_obj.published_at = timezone.now()
+            homepage_obj.save(update_fields=["status", "published_at"])
             created["homepage_published_now"] = True
         else:
             created["homepage_published_now"] = False
 
-    return Response(
-        {
-            "detail": "Setup completed.",
-            "created": created,
-        },
-        status=status.HTTP_200_OK,
-    )
+    return Response({"detail": "Setup completed.", "created": created}, status=status.HTTP_200_OK)

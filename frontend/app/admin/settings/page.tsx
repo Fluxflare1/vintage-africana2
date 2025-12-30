@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ImagePicker, MediaAsset } from "@/components/ImagePicker";
+import { ImagePicker } from "@/components/ImagePicker";
 
 type MediaAssetData = {
   id: number;

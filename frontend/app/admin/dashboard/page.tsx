@@ -1,6 +1,45 @@
 import Link from "next/link";
 
-function Card({
+export default function AdminDashboard() {
+  return (
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold">Dashboard</h1>
+      <p className="text-gray-600">
+        Manage your website content and settings.
+      </p>
+
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <DashboardCard
+          title="Pages"
+          desc="Create and manage site pages"
+          href="/admin/pages"
+        />
+        <DashboardCard
+          title="Homepage"
+          desc="Hero, cover image, and homepage content"
+          href="/admin/homepage"
+        />
+        <DashboardCard
+          title="Navigation"
+          desc="Menus and site links"
+          href="/admin/navigation"
+        />
+        <DashboardCard
+          title="Site Settings"
+          desc="Logo, SEO, contact info"
+          href="/admin/settings"
+        />
+        <DashboardCard
+          title="Media Library"
+          desc="Upload and manage images"
+          href="/admin/media"
+        />
+      </div>
+    </div>
+  );
+}
+
+function DashboardCard({
   title,
   desc,
   href,
@@ -10,55 +49,12 @@ function Card({
   href: string;
 }) {
   return (
-    <Link href={href} className="block rounded border bg-white p-4 hover:shadow-sm">
-      <div className="font-semibold">{title}</div>
+    <Link
+      href={href}
+      className="border bg-white rounded-lg p-5 hover:shadow transition block"
+    >
+      <div className="font-semibold text-lg">{title}</div>
       <div className="text-sm text-gray-600 mt-1">{desc}</div>
-      <div className="text-sm underline mt-3">Open</div>
     </Link>
-  );
-}
-
-export default function AdminDashboard() {
-  return (
-    <div className="space-y-5">
-      <div>
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        <p className="text-sm text-gray-600">
-          Manage content, navigation, settings, and media.
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card
-          title="Pages"
-          desc="Create and edit website pages (Homepage, About, etc.)"
-          href="/admin/pages"
-        />
-        <Card
-          title="Navigation"
-          desc="Manage header/footer menus and links"
-          href="/admin/navigation"
-        />
-        <Card
-          title="Settings"
-          desc="Site identity, SEO defaults, social links, logo/favicon"
-          href="/admin/settings"
-        />
-        <Card
-          title="Media Library"
-          desc="Upload and pick images used across the site"
-          href="/admin/media"
-        />
-        <Card
-          title="Homepage (Hero)"
-          desc="Edit homepage hero section and layout"
-          href="/admin/homepage"
-        />
-      </div>
-
-      <div className="pt-4 border-t">
-        <Link className="underline" href="/admin/setup">Setup</Link>
-      </div>
-    </div>
   );
 }

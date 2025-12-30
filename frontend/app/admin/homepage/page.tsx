@@ -4,12 +4,17 @@ import { useEffect, useState } from "react";
 import { ImagePicker } from "@/components/ImagePicker";
 
 type Asset = { id: number; url: string; title?: string };
+type HomepageStatus = "draft" | "review" | "published";
+
+function isHomepageStatus(v: string): v is HomepageStatus {
+  return v === "draft" || v === "review" || v === "published";
+}
 
 export default function AdminHomepage() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
-  const [status, setStatus] = useState<"draft" | "review" | "published">("draft");
+  const [status, setStatus] = useState<HomepageStatus>("draft");
 
   const [heroEnabled, setHeroEnabled] = useState(false);
   const [heroCtaLabel, setHeroCtaLabel] = useState("");
@@ -32,13 +37,21 @@ export default function AdminHomepage() {
       }
       const p = await res.json();
 
-      setStatus(p.status || "draft");
+      setStatus(isHomepageStatus(p.status) ? p.status : "draft");
       setHeroEnabled(!!p.hero_enabled);
       setHeroCtaLabel(p.hero_cta_label || "");
       setHeroCtaUrl(p.hero_cta_url || "");
 
-      setHeroAsset(p.hero_asset?.id ? { id: p.hero_asset.id, url: p.hero_asset.url, title: p.hero_asset.title } : null);
-      setCoverImage(p.cover_image?.id ? { id: p.cover_image.id, url: p.cover_image.url, title: p.cover_image.title } : null);
+      setHeroAsset(
+        p.hero_asset?.id
+          ? { id: p.hero_asset.id, url: p.hero_asset.url, title: p.hero_asset.title }
+          : null
+      );
+      setCoverImage(
+        p.cover_image?.id
+          ? { id: p.cover_image.id, url: p.cover_image.url, title: p.cover_image.title }
+          : null
+      );
 
       setLoading(false);
     })();
@@ -77,7 +90,14 @@ export default function AdminHomepage() {
 
       <div className="flex gap-3 items-center">
         <label className="text-sm font-medium">Status</label>
-        <select className="border p-2 rounded" value={status} onChange={(e) => setStatus(e.target.value as any)}>
+        <select
+          className="border p-2 rounded"
+          value={status}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (isHomepageStatus(v)) setStatus(v);
+          }}
+        >
           <option value="draft">draft</option>
           <option value="review">review</option>
           <option value="published">published</option>
@@ -88,14 +108,22 @@ export default function AdminHomepage() {
         <h2 className="font-semibold">Hero</h2>
 
         <label className="flex gap-2 items-center">
-          <input type="checkbox" checked={heroEnabled} onChange={(e) => setHeroEnabled(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={heroEnabled}
+            onChange={(e) => setHeroEnabled(e.target.checked)}
+          />
           Enable hero section
         </label>
 
         <div className="space-y-2">
           <div className="text-sm font-medium">Hero background (Image/Video asset)</div>
 
-          {heroAsset?.url ? <img src={heroAsset.url} className="h-40 rounded border object-cover" /> : <div className="text-sm text-muted-foreground">No hero asset selected</div>}
+          {heroAsset?.url ? (
+            <img src={heroAsset.url} className="h-40 rounded border object-cover" />
+          ) : (
+            <div className="text-sm text-muted-foreground">No hero asset selected</div>
+          )}
 
           <div className="flex gap-2">
             <button className="border px-3 py-2 rounded" onClick={() => setHeroPickerOpen(true)}>
@@ -109,15 +137,29 @@ export default function AdminHomepage() {
 
         <div className="space-y-2">
           <div className="text-sm font-medium">Hero CTA</div>
-          <input className="border w-full p-2 rounded" value={heroCtaLabel} onChange={(e) => setHeroCtaLabel(e.target.value)} placeholder="CTA label (e.g. Shop Collections)" />
-          <input className="border w-full p-2 rounded" value={heroCtaUrl} onChange={(e) => setHeroCtaUrl(e.target.value)} placeholder="CTA URL (e.g. /collections)" />
+          <input
+            className="border w-full p-2 rounded"
+            value={heroCtaLabel}
+            onChange={(e) => setHeroCtaLabel(e.target.value)}
+            placeholder="CTA label (e.g. Shop Collections)"
+          />
+          <input
+            className="border w-full p-2 rounded"
+            value={heroCtaUrl}
+            onChange={(e) => setHeroCtaUrl(e.target.value)}
+            placeholder="CTA URL (e.g. /collections)"
+          />
         </div>
       </section>
 
       <section className="border rounded p-4 space-y-3">
         <h2 className="font-semibold">Cover image</h2>
 
-        {coverImage?.url ? <img src={coverImage.url} className="h-40 rounded border object-cover" /> : <div className="text-sm text-muted-foreground">No cover image selected</div>}
+        {coverImage?.url ? (
+          <img src={coverImage.url} className="h-40 rounded border object-cover" />
+        ) : (
+          <div className="text-sm text-muted-foreground">No cover image selected</div>
+        )}
 
         <div className="flex gap-2">
           <button className="border px-3 py-2 rounded" onClick={() => setCoverPickerOpen(true)}>
@@ -133,6 +175,7 @@ export default function AdminHomepage() {
         Save
       </button>
 
+      {/* ✅ Updated ImagePicker usage (no `any`, correct prop typing) */}
       <ImagePicker
         open={heroPickerOpen}
         onClose={() => setHeroPickerOpen(false)}

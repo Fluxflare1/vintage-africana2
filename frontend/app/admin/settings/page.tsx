@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { ImagePicker } from "@/components/ImagePicker";
+import type { MediaAsset } from "@/components/ImagePicker";
 
 type MediaAssetData = {
   id: number;

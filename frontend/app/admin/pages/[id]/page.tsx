@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { ImagePicker } from "@/components/ImagePicker";
+import type { MediaAsset } from "@/components/ImagePicker";
 
 type Block =
   | { type: "heading"; level: number; text: string }

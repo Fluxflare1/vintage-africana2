@@ -4,20 +4,12 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-// If NEXT_PUBLIC_BACKEND_URL is empty, requests become relative (/api/..)
-// which is correct when Next proxies /api -> backend in Docker/prod.
-const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
 
 function getCookie(name: string) {
   if (typeof document === "undefined") return "";
   const m = document.cookie.match(new RegExp("(^| )" + name + "=([^;]+)"));
   return m ? decodeURIComponent(m[2]) : "";
-}
-
-function getNextParam(): string {
-  if (typeof window === "undefined") return "/admin/dashboard";
-  const sp = new URLSearchParams(window.location.search);
-  return sp.get("next") || "/admin/dashboard";
 }
 
 export default function AdminLogin() {
@@ -58,16 +50,14 @@ export default function AdminLogin() {
       return;
     }
 
-    router.replace(getNextParam());
+    router.replace("/admin/dashboard");
   }
 
   return (
     <main className="max-w-md mx-auto p-6 space-y-4">
       <h1 className="text-2xl font-bold">Admin Login</h1>
 
-      {err ? (
-        <p className="text-red-600 text-sm whitespace-pre-wrap">{err}</p>
-      ) : null}
+      {err ? <p className="text-red-600 text-sm whitespace-pre-wrap">{err}</p> : null}
 
       <form onSubmit={onSubmit} className="space-y-3">
         <input
